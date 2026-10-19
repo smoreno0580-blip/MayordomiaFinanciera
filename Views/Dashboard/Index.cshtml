@@ -1,0 +1,117 @@
+﻿@using System.Data
+@model DataTable
+@{
+    ViewData["Title"] = "Panel Principal - Dashboard";
+    Layout = "_Layout";
+
+    int totalUsers = ViewBag.TotalUsers ?? 0;
+    int totalGroups = ViewBag.TotalGroups ?? 0;
+    int totalSessions = ViewBag.TotalSessions ?? 0;
+    int birthdaysCount = ViewBag.BirthdaysCount ?? 0;
+    DataTable recentPosts = ViewBag.RecentPosts as DataTable ?? new DataTable();
+}
+
+<div class="mb-8">
+    <h1 class="text-3xl font-extrabold text-[#1B365D]">Panel de Control</h1>
+    <p class="text-gray-500 text-sm mt-1">Resumen general y métricas operativas de Mayordomía Financiera.</p>
+</div>
+
+<!-- Tarjetas KPI Dinámicas (Igual al prototipo original) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Tarjeta 1: Usuarios -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between">
+        <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Total Usuarios</p>
+            <h3 class="text-3xl font-extrabold text-[#1B365D] mt-1">@totalUsers</h3>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-blue-50 text-[#1B365D] flex items-center justify-center text-xl">
+            <i class="fa-solid fa-users"></i>
+        </div>
+    </div>
+
+    <!-- Tarjeta 2: Grupos -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between">
+        <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Grupos Activos</p>
+            <h3 class="text-3xl font-extrabold text-[#1B365D] mt-1">@totalGroups</h3>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-amber-50 text-[#C5A059] flex items-center justify-center text-xl">
+            <i class="fa-solid fa-people-group"></i>
+        </div>
+    </div>
+
+    <!-- Tarjeta 3: Sesiones -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between">
+        <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Sesiones Programadas</p>
+            <h3 class="text-3xl font-extrabold text-[#1B365D] mt-1">@totalSessions</h3>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-calendar-check"></i>
+        </div>
+    </div>
+
+    <!-- Tarjeta 4: Cumpleaños del Mes -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between">
+        <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Cumpleaños del Mes</p>
+            <h3 class="text-3xl font-extrabold text-[#C5A059] mt-1">@birthdaysCount</h3>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-cake-candles"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Sección Inferior: Accesos Rápidos y Actividad Reciente -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Columna Izquierda: Accesos Directos -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-1">
+        <h3 class="font-bold text-[#1B365D] text-base mb-4 flex items-center"><i class="fa-solid fa-compass text-[#C5A059] mr-2"></i> Accesos Rápidos</h3>
+        <div class="space-y-3">
+            <a href="/Groups/Index" class="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all text-sm font-semibold text-gray-700">
+                <span><i class="fa-solid fa-people-roof mr-2 text-[#1B365D]"></i> Gestionar Grupos</span>
+                <i class="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+            </a>
+            <a href="/Sessions/Index" class="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all text-sm font-semibold text-gray-700">
+                <span><i class="fa-solid fa-video mr-2 text-[#1B365D]"></i> Ver Sesiones y Zoom</span>
+                <i class="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+            </a>
+            <a href="/Birthdays/Index" class="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all text-sm font-semibold text-gray-700">
+                <span><i class="fa-solid fa-cake-candles mr-2 text-[#1B365D]"></i> Agenda de Cumpleaños</span>
+                <i class="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+            </a>
+            <a href="/Community/Index" class="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all text-sm font-semibold text-gray-700">
+                <span><i class="fa-solid fa-comments mr-2 text-[#1B365D]"></i> Muro de Comunidad</span>
+                <i class="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Columna Derecha: Actividad Reciente del Muro -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+        <h3 class="font-bold text-[#1B365D] text-base mb-4 flex items-center"><i class="fa-solid fa-bolt text-[#C5A059] mr-2"></i> Actividad Reciente en Comunidad</h3>
+        <div class="space-y-3">
+            @if (recentPosts.Rows.Count == 0)
+            {
+                <p class="text-sm text-gray-500 py-6 text-center">No hay actividad reciente registrada en el muro.</p>
+            }
+            else
+            {
+                int limit = 0;
+                foreach (DataRow pRow in recentPosts.Rows)
+                {
+                    if (limit >= 3) break; // Mostrar solo las 3 últimas
+                                           <div class="p-4 rounded-lg bg-gray-50 border border-gray-100">
+                                               <div class="flex justify-between items-center mb-1">
+                                                   <span class="font-bold text-xs text-[#1B365D]">@pRow["Name"]</span>
+                                                   <span class="text-[11px] text-gray-400">@Convert.ToDateTime(pRow["CreatedAt"]).ToString("dd/MM/yyyy HH:mm")</span>
+                                               </div>
+                                               <p class="text-xs text-gray-600 line-clamp-2">@pRow["Content"]</p>
+                                           </div>
+                    limit++;
+                }
+            }
+        </div>
+    </div>
+</div>

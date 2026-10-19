@@ -1,0 +1,155 @@
+﻿@using System.Data
+@model DataTable
+@{
+    ViewData["Title"] = "Control de Asistencia";
+    Layout = "_Layout";
+
+    DataTable groupsTable = ViewBag.GroupsList as DataTable ?? new DataTable();
+    DataTable sessionsTable = ViewBag.SessionsList as DataTable ?? new DataTable();
+    DataTable attRecords = ViewBag.AttendanceRecords as DataTable ?? new DataTable();
+
+    Guid selectedGroupId = ViewBag.SelectedGroupId != null ? (Guid)ViewBag.SelectedGroupId : Guid.Empty;
+    Guid selectedSessionId = ViewBag.SelectedSessionId != null ? (Guid)ViewBag.SelectedSessionId : Guid.Empty;
+
+    // Diccionario rápido para buscar el estatus de cada usuario en la sesión actual
+    var attStatusDict = new Dictionary<Guid, string>();
+    foreach (DataRow r in attRecords.Rows)
+    {
+        if (r["UserId"] != DBNull.Value && r["Status"] != DBNull.Value)
+        {
+            attStatusDict[(Guid)r["UserId"]] = r["Status"].ToString()!;
+        }
+    }
+}
+
+<div class="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+    <div>
+        <h1 class="text-3xl font-extrabold text-[#1B365D]">Control de Asistencia</h1>
+        <p class="text-gray-500 text-sm mt-1">Gestione y registre la asistencia de los alumnos por grupo y sesión en tiempo real.</p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+        @if (selectedSessionId != Guid.Empty)
+        {
+            // Buscamos si la sesión actual tiene enlace de Zoom
+            string zoomLink = "";
+            foreach (DataRow s in sessionsTable.Rows)
+            {
+                if ((Guid)s["Id"] == selectedSessionId && s["ZoomLink"] != DBNull.Value)
+                {
+                    zoomLink = s["ZoomLink"].ToString()!;
+                    break;
+                }
+            }
+            if (!string.IsNullOrEmpty(zoomLink))
+            {
+                <a href="@zoomLink" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-md flex items-center space-x-2">
+                    <i class="fa-solid fa-video"></i><span>Unirse a Zoom</span>
+                </a>
+            }
+        }
+
+        <!-- Selector de Grupo -->
+        <form method="get" asp-action="Index" id="groupForm" class="flex items-center gap-2">
+            <select name="groupId" onchange="this.form.submit()" class="px-4 py-2.5 border border-gray-300 rounded-lg text-sm bg-white font-semibold text-[#1B365D] focus:ring-2 focus:ring-[#1B365D] shadow-sm">
+                <option value="">-- Seleccionar Grupo --</option>
+                @foreach (DataRow g in groupsTable.Rows)
+                {
+                    bool isSelected = selectedGroupId == (Guid)g["Id"];
+                    <option value="@g["Id"]" selected="@isSelected">@g["Name"] (@g["Country"])</option>
+                }
+            </select>
+        </form>
+
+        @if (selectedGroupId != Guid.Empty && sessionsTable.Rows.Count > 0)
+        {
+            <!-- Selector de Sesión -->
+            <form method="get" asp-action="Index" class="flex items-center gap-2">
+                <input type="hidden" name="groupId" value="@selectedGroupId" />
+                <select name="sessionId" onchange="this.form.submit()" class="px-4 py-2.5 border border-gray-300 rounded-lg text-sm bg-white font-semibold text-[#1B365D] focus:ring-2 focus:ring-[#1B365D] shadow-sm">
+                    <option value="">-- Seleccionar Sesión --</option>
+                    @foreach (DataRow s in sessionsTable.Rows)
+                    {
+                        bool isSelected = selectedSessionId == (Guid)s["Id"];
+                        <option value="@s["Id"]" selected="@isSelected">Sesión @s["SessionNumber"]: @s["Topic"]</option>
+                    }
+                </select>
+            </form>
+        }
+    </div>
+</div>
+
+@if (selectedGroupId != Guid.Empty && selectedSessionId != Guid.Empty)
+{
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <h3 class="font-bold text-[#1B365D] text-base"><i class="fa-solid fa-clipboard-user mr-2 text-[#C5A059]"></i> Registro de Asistencia del Grupo</h3>
+            <span class="text-xs text-gray-500">Haga clic en los botones para alternar el estado del estudiante</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="text-[#1B365D] text-xs font-bold uppercase tracking-wider border-b border-gray-200 bg-gray-50">
+                        <th class="p-4">Estudiante</th>
+                        <th class="p-4">Correo</th>
+                        <th class="p-4 text-right">Estado de Asistencia</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm">
+                    @if (Model == null || Model.Rows.Count == 0)
+                    {
+                        <tr><td colspan="3" class="p-6 text-center text-gray-500">No hay alumnos registrados en este grupo.</td></tr>
+                    }
+                    else
+                    {
+                        foreach (DataRow student in Model.Rows)
+                        {
+                            Guid userId = (Guid)student["UserId"];
+                            string currentStatus = attStatusDict.ContainsKey(userId) ? attStatusDict[userId] : "present";
+
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-4 font-semibold text-gray-800">@student["Name"]</td>
+                                <td class="p-4 text-xs text-gray-500">@student["Email"]</td>
+                                <td class="p-4 text-right space-x-2">
+                                    <!-- Botón Presente -->
+                                    <form asp-action="UpdateStatus" method="post" class="inline">
+                                        <input type="hidden" name="sessionId" value="@selectedSessionId" />
+                                        <input type="hidden" name="userId" value="@userId" />
+                                        <input type="hidden" name="status" value="present" />
+                                        <input type="hidden" name="currentGroupId" value="@selectedGroupId" />
+                                        <button type="submit" class="px-3 py-1 rounded-lg text-xs font-bold transition-all @(currentStatus == "present" ? "bg-green-600 text-white shadow" : "bg-gray-100 text-gray-600 hover:bg-gray-200")">Presente</button>
+                                    </form>
+
+                                    <!-- Botón Excusa -->
+                                    <form asp-action="UpdateStatus" method="post" class="inline">
+                                        <input type="hidden" name="sessionId" value="@selectedSessionId" />
+                                        <input type="hidden" name="userId" value="@userId" />
+                                        <input type="hidden" name="status" value="excused" />
+                                        <input type="hidden" name="currentGroupId" value="@selectedGroupId" />
+                                        <button type="submit" class="px-3 py-1 rounded-lg text-xs font-bold transition-all @(currentStatus == "excused" ? "bg-amber-500 text-white shadow" : "bg-gray-100 text-gray-600 hover:bg-gray-200")">Excusa</button>
+                                    </form>
+
+                                    <!-- Botón Ausente -->
+                                    <form asp-action="UpdateStatus" method="post" class="inline">
+                                        <input type="hidden" name="sessionId" value="@selectedSessionId" />
+                                        <input type="hidden" name="userId" value="@userId" />
+                                        <input type="hidden" name="status" value="absent" />
+                                        <input type="hidden" name="currentGroupId" value="@selectedGroupId" />
+                                        <button type="submit" class="px-3 py-1 rounded-lg text-xs font-bold transition-all @(currentStatus == "absent" ? "bg-red-600 text-white shadow" : "bg-gray-100 text-gray-600 hover:bg-gray-200")">Ausente</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else
+{
+    <div class="bg-white p-12 rounded-xl text-center border border-gray-200 text-gray-500">
+        <i class="fa-solid fa-calendar-days text-4xl text-gray-300 mb-3"></i>
+        <p class="text-base font-medium">Por favor, seleccione un grupo y una sesión para administrar el control de asistencia.</p>
+    </div>
+}

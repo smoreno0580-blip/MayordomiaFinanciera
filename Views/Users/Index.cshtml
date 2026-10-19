@@ -1,0 +1,205 @@
+﻿@using System.Data
+@model DataTable
+@{
+    ViewData["Title"] = "Gestión de Usuarios";
+    Layout = "_Layout";
+    DataTable groupsTable = ViewBag.GroupsList as DataTable ?? new DataTable();
+
+    var spanishSpeakingCountries = new List<string>
+    {
+        "Panamá", "España", "Argentina", "Bolivia", "Chile", "Colombia", "Costa Rica",
+        "Cuba", "Ecuador", "El Salvador", "Guatemala", "Honduras", "México",
+        "Nicaragua", "Paraguay", "Perú", "República Dominicana", "Uruguay", "Venezuela"
+    };
+}
+
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div>
+        <h1 class="text-3xl font-extrabold text-[#1B365D]">Gestión de Usuarios</h1>
+        <p class="text-gray-500 text-sm mt-1">Administre cuentas, roles y asignación de grupos de los participantes.</p>
+    </div>
+    @if (User.IsInRole("admin"))
+    {
+        <div class="flex flex-wrap items-center gap-3">
+            <!-- Botón Abrir Modal de Importación -->
+            <button onclick="openImportModal()" class="bg-amber-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-amber-700 transition-all shadow flex items-center space-x-2">
+                <i class="fa-solid fa-file-arrow-up"></i><span>Importar Excel/TXT</span>
+            </button>
+            <!-- Enlace Descarga CSV Usuarios -->
+            <a href="@Url.Action("ExportCsv", "Users")" class="bg-green-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-green-800 transition-all shadow flex items-center space-x-2">
+                <i class="fa-solid fa-file-arrow-down"></i><span>Exportar CSV</span>
+            </a>
+            <button onclick="openUserModal()" class="bg-[#1B365D] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all shadow flex items-center space-x-2">
+                <i class="fa-solid fa-user-plus"></i><span>Nuevo Usuario</span>
+            </button>
+        </div>
+    }
+</div>
+
+<!-- Modal / Formulario Crear o Editar Usuario -->
+<div id="user-modal" class="hidden bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8">
+    <h3 id="user-modal-title" class="font-bold text-[#1B365D] text-lg mb-4">Registrar Nuevo Usuario</h3>
+    <form asp-action="UpsertUser" method="post" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="userId" name="id" />
+
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nombre Completo</label>
+            <input type="text" id="userName" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Correo Electrónico</label>
+            <input type="email" id="userEmail" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Teléfono</label>
+            <input type="text" id="userPhone" name="phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Rol</label>
+            <select id="userRole" name="role" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                <option value="student">Estudiante</option>
+                <option value="teacher">Profesor</option>
+                <option value="admin">Administrador</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">País</label>
+            <select id="userCountry" name="country" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                @foreach (var c in spanishSpeakingCountries)
+                {
+                    <option value="@c">@c</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Grupo Asignado</label>
+            <select id="userGroupId" name="groupId" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                <option value="">Ningún grupo</option>
+                @foreach (DataRow gRow in groupsTable.Rows)
+                {
+                    <option value="@gRow["Id"]">@gRow["Name"] (@gRow["Country"])</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Fecha de Nacimiento</label>
+            <input type="date" id="userBirthDate" name="birthDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+        </div>
+        <div class="md:col-span-3 flex justify-end space-x-3 mt-4">
+            <button type="button" onclick="closeUserModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold">Cancelar</button>
+            <button type="submit" class="px-5 py-2 bg-[#1B365D] text-white rounded-lg text-sm font-semibold">Guardar Usuario</button>
+        </div>
+    </form>
+</div>
+
+<!-- Listado de Usuarios -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 text-[#1B365D] text-xs font-bold uppercase tracking-wider border-b border-gray-200">
+                    <th class="p-4">Nombre</th>
+                    <th class="p-4">Correo / Teléfono</th>
+                    <th class="p-4">País</th>
+                    <th class="p-4">Cumpleaños</th>
+                    <th class="p-4">Rol</th>
+                    <th class="p-4">Grupo</th>
+                    <th class="p-4 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-sm">
+                @if (Model == null || Model.Rows.Count == 0)
+                {
+                    <tr><td colspan="7" class="p-6 text-center text-gray-500">No hay usuarios registrados.</td></tr>
+                }
+                else
+                {
+                    @foreach (DataRow row in Model.Rows)
+                    {
+                        string role = row["Role"].ToString()!;
+                        string badgeClass = role == "admin" ? "bg-purple-100 text-purple-700" : (role == "teacher" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700");
+                        string bDateFormatted = row["BirthDate"] != DBNull.Value ? Convert.ToDateTime(row["BirthDate"]).ToString("yyyy-MM-dd") : "";
+
+                        <tr class="hover:bg-gray-50 transition-all">
+                            <td class="p-4 font-semibold text-gray-800">@row["Name"]</td>
+                            <td class="p-4 text-gray-600 text-xs">
+                                <div>@row["Email"]</div>
+                                <div class="text-gray-400 mt-0.5"><i class="fa-solid fa-phone mr-1 text-[#C5A059]"></i>@(row["Phone"] != DBNull.Value ? row["Phone"] : "N/D")</div>
+                            </td>
+                            <td class="p-4 text-gray-600 text-xs"><i class="fa-solid fa-earth-americas mr-1 text-[#C5A059]"></i>@row["Country"]</td>
+                            <td class="p-4 text-gray-600 text-xs">@(row["BirthDate"] != DBNull.Value ? Convert.ToDateTime(row["BirthDate"]).ToString("dd/MM/yyyy") : "N/D")</td>
+                            <td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider @badgeClass">@role</span></td>
+                            <td class="p-4 text-gray-600 text-xs">@(row["GroupName"] != DBNull.Value ? row["GroupName"] : "Ninguno")</td>
+                            <td class="p-4 text-right space-x-2">
+                                <button onclick="editUser('@row["Id"]', '@row["Name"]', '@row["Email"]', '@row["Phone"]', '@row["Role"]', '@row["Country"]', '@row["GroupId"]', '@bDateFormatted')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Editar">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                @if (row["Email"].ToString() != "admin@panama.org")
+                                {
+                                    <form asp-action="DeleteUser" method="post" class="inline" onsubmit="return confirm('¿Está seguro de eliminar este usuario?');">
+                                        <input type="hidden" name="id" value="@row["Id"]" />
+                                        <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<div id="importModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6">
+        <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+            <h3 class="text-xl font-bold text-[#1B365D] flex items-center"><i class="fa-solid fa-file-arrow-up mr-2 text-[#C5A059]"></i> Importar Usuarios Masivos</h3>
+            <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        <form asp-action="ImportUsers" method="post" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Cargar Archivo o Pegar Datos (.csv / .txt)</label>
+                <textarea name="rawData" rows="5" required placeholder="Nombre, Correo, Telefono, Contraseña, País, FechaNacimiento(YYYY-MM-DD), Rol" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-[#1B365D] focus:outline-none"></textarea>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold">Cancelar</button>
+                <button type="submit" class="px-5 py-2 bg-[#1B365D] text-white rounded-lg text-sm font-semibold">Procesar Importación</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openImportModal() { document.getElementById('importModal').classList.remove('hidden'); }
+    function closeImportModal() { document.getElementById('importModal').classList.add('hidden'); }
+</script>
+<script>
+    function openUserModal() {
+        document.getElementById('userId').value = '';
+        document.getElementById('userName').value = '';
+        document.getElementById('userEmail').value = '';
+        document.getElementById('userPhone').value = '';
+        document.getElementById('userRole').value = 'student';
+        document.getElementById('userGroupId').value = '';
+        document.getElementById('userBirthDate').value = '';
+        document.getElementById('user-modal-title').innerText = 'Registrar Nuevo Usuario';
+        document.getElementById('user-modal').classList.remove('hidden');
+    }
+
+    function editUser(id, name, email, phone, role, country, groupId, birthDate) {
+        document.getElementById('userId').value = id;
+        document.getElementById('userName').value = name;
+        document.getElementById('userEmail').value = email;
+        document.getElementById('userPhone').value = phone !== 'null' ? phone : '';
+        document.getElementById('userRole').value = role;
+        document.getElementById('userCountry').value = country;
+        document.getElementById('userGroupId').value = groupId !== 'null' ? groupId : '';
+        document.getElementById('userBirthDate').value = birthDate !== 'null' ? birthDate : '';
+        document.getElementById('user-modal-title').innerText = 'Editar Usuario';
+        document.getElementById('user-modal').classList.remove('hidden');
+    }
+
+    function closeUserModal() {
+        document.getElementById('user-modal').classList.add('hidden');
+    }
+</script>
