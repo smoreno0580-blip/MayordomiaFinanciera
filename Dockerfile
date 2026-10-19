@@ -2,8 +2,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copiar el archivo de solución y proyectos principales
-COPY ["MayordomiaFinanciera.Web.sln", "./"]
+# Copiar el archivo de solución desde la carpeta Web y los proyectos
+COPY ["MayordomiaFinanciera.Web/MayordomiaFinanciera.Web.sln", "./"]
 COPY ["MayordomiaFinanciera.Core/MayordomiaFinanciera.Core.csproj", "MayordomiaFinanciera.Core/"]
 COPY ["MayordomiaFinanciera.Infrastructure/MayordomiaFinanciera.Infrastructure.csproj", "MayordomiaFinanciera.Infrastructure/"]
 COPY ["MayordomiaFinanciera.Web/MayordomiaFinanciera.Web.csproj", "MayordomiaFinanciera.Web/"]
