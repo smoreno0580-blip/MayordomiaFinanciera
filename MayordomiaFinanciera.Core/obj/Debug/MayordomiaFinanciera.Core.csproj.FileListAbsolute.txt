@@ -1,0 +1,6 @@
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\bin\Debug\MayordomiaFinanciera.Core.dll
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\bin\Debug\MayordomiaFinanciera.Core.pdb
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\obj\Debug\MayordomiaFinanciera.Core.csproj.AssemblyReference.cache
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\obj\Debug\MayordomiaFinanciera.Core.csproj.CoreCompileInputs.cache
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\obj\Debug\MayordomiaFinanciera.Core.dll
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\obj\Debug\MayordomiaFinanciera.Core.pdb
