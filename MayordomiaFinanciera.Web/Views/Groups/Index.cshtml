@@ -1,0 +1,161 @@
+﻿@using System.Data
+@model DataTable
+@{
+    ViewData["Title"] = "Gestión de Grupos";
+    Layout = "_Layout";
+    DataTable teachersTable = ViewBag.TeachersList as DataTable ?? new DataTable();
+
+    // Listado de países de habla hispana (América y España)
+    var spanishSpeakingCountries = new List<string>
+    {
+        "Panamá", "España", "Argentina", "Bolivia", "Chile", "Colombia", "Costa Rica",
+        "Cuba", "Ecuador", "El Salvador", "Guatemala", "Honduras", "México",
+        "Nicaragua", "Paraguay", "Perú", "República Dominicana", "Uruguay", "Venezuela"
+    };
+}
+
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div>
+        <h1 class="text-3xl font-extrabold text-[#1B365D]">Gestión de Grupos</h1>
+        <p class="text-gray-500 text-sm mt-1">Administre sedes, horarios, profesores y países de habla hispana.</p>
+    </div>
+    @if (User.IsInRole("admin") || User.IsInRole("teacher"))
+    {
+        <button onclick="openGroupModal()" class="bg-[#1B365D] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all shadow flex items-center space-x-2">
+            <i class="fa-solid fa-plus"></i><span>Nuevo Grupo</span>
+        </button>
+    }
+</div>
+
+<!-- Modal / Formulario Desplegable para Crear o Editar Grupo -->
+<div id="group-modal" class="hidden bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8">
+    <h3 id="modal-title" class="font-bold text-[#1B365D] text-lg mb-4">Registrar Nuevo Grupo</h3>
+    <form asp-action="UpsertGroup" method="post" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input type="hidden" id="groupId" name="id" />
+
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nombre del Grupo</label>
+            <input type="text" id="groupName" name="name" required placeholder="Ej: Mayordomía Central" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">País</label>
+            <select id="groupCountry" name="country" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                @foreach (var country in spanishSpeakingCountries)
+                {
+                    <option value="@country">@country</option>
+                }
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Profesor Encargado</label>
+            <select id="groupTeachers" name="teachers" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                <option value="">Seleccione un profesor...</option>
+                @foreach (DataRow tRow in teachersTable.Rows)
+                {
+                    <option value="@tRow["Name"]">@tRow["Name"]</option>
+                }
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Día de la semana</label>
+            <input type="text" id="groupWeekday" name="weekday" placeholder="Ej: Miércoles" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Hora</label>
+            <input type="text" id="groupTime" name="time" placeholder="Ej: 07:00 PM" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Fecha de Inicio</label>
+            <input type="date" id="groupStartDate" name="startDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+        </div>
+
+        <div class="md:col-span-3 flex justify-end space-x-3 mt-4">
+            <button type="button" onclick="closeGroupModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold">Cancelar</button>
+            <button type="submit" class="px-5 py-2 bg-[#1B365D] text-white rounded-lg text-sm font-semibold">Guardar Grupo</button>
+        </div>
+    </form>
+</div>
+
+<!-- Listado de Grupos -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 text-[#1B365D] text-xs font-bold uppercase tracking-wider border-b border-gray-200">
+                    <th class="p-4">Grupo</th>
+                    <th class="p-4">País / Sede</th>
+                    <th class="p-4">Horario</th>
+                    <th class="p-4">Profesor</th>
+                    <th class="p-4">Estado</th>
+                    <th class="p-4 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-sm">
+                @if (Model == null || Model.Rows.Count == 0)
+                {
+                    <tr><td colspan="6" class="p-6 text-center text-gray-500">No hay grupos registrados.</td></tr>
+                }
+                else
+                {
+                    @foreach (DataRow row in Model.Rows)
+                    {
+                        <tr class="hover:bg-gray-50 transition-all">
+                            <td class="p-4 font-bold text-[#1B365D]">@row["Name"]</td>
+                            <td class="p-4 text-gray-600 text-xs"><i class="fa-solid fa-earth-americas mr-1 text-[#C5A059]"></i>@row["Country"]</td>
+                            <td class="p-4 text-gray-600 text-xs">@row["Weekday"] - @row["Time"]</td>
+                            <td class="p-4 text-gray-800 font-medium">@row["Teachers"]</td>
+                            <td class="p-4">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Activo</span>
+                            </td>
+                            <td class="p-4 text-right space-x-2">
+                                <button onclick="editGroup('@row["Id"]', '@row["Name"]', '@row["Country"]', '@row["Weekday"]', '@row["Time"]', '@row["Teachers"]')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Editar">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                @if (User.IsInRole("admin"))
+                                {
+                                    <form asp-action="DeleteGroup" method="post" class="inline" onsubmit="return confirm('¿Está seguro de eliminar este grupo?');">
+                                        <input type="hidden" name="id" value="@row["Id"]" />
+                                        <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Eliminar">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function openGroupModal() {
+        document.getElementById('groupId').value = '';
+        document.getElementById('groupName').value = '';
+        document.getElementById('groupWeekday').value = '';
+        document.getElementById('groupTime').value = '';
+        document.getElementById('modal-title').innerText = 'Registrar Nuevo Grupo';
+        document.getElementById('group-modal').classList.remove('hidden');
+    }
+
+    function editGroup(id, name, country, weekday, time, teachers) {
+        document.getElementById('groupId').value = id;
+        document.getElementById('groupName').value = name;
+        document.getElementById('groupCountry').value = country;
+        document.getElementById('groupWeekday').value = weekday;
+        document.getElementById('groupTime').value = time;
+        document.getElementById('groupTeachers').value = teachers;
+        document.getElementById('modal-title').innerText = 'Editar Grupo';
+        document.getElementById('group-modal').classList.remove('hidden');
+    }
+
+    function closeGroupModal() {
+        document.getElementById('group-modal').classList.add('hidden');
+    }
+</script>

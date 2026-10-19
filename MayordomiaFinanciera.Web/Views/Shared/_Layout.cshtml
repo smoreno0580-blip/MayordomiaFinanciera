@@ -1,0 +1,113 @@
+﻿<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - Mayordomía Financiera</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .bg-compass-navy { background-color: #1B365D; }
+        .text-compass-navy { color: #1B365D; }
+        .bg-compass-gold { background-color: #C5A059; }
+        .text-compass-gold { color: #C5A059; }
+        .border-compass-gold { border-color: #C5A059; }
+        .hover\:bg-compass-gold-dark:hover { background-color: #A88647; }
+    </style>
+</head>
+<body class="h-full bg-gray-50 text-gray-800 flex flex-col">
+
+    <!-- Contenedor de Notificaciones Toast -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col space-y-2"></div>
+
+    <div id="app" class="min-h-full flex flex-col flex-grow">
+        @if (User.Identity != null && User.Identity.IsAuthenticated)
+        {
+            <!-- Barra de Navegación Superior -->
+            <nav class="bg-[#1B365D] text-white shadow-md">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between h-16">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-[#C5A059] rounded-lg flex items-center justify-center">
+                                <i class="fa-solid fa-scale-balanced text-[#1B365D] font-bold"></i>
+                            </div>
+                            <div>
+                                <span class="font-bold text-lg tracking-wide">Finanzas Bíblicas</span>
+                                <span class="block text-[10px] text-[#C5A059] uppercase tracking-widest font-semibold">Mayordomía Financiera</span>
+                            </div>
+                        </div>
+                        <div class="hidden md:flex items-center space-x-1">
+                            <a href="@Url.Action("Index", "Dashboard")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Dashboard</a>
+                            @if (User.IsInRole("admin") || User.IsInRole("teacher"))
+                            {
+                                <a href="@Url.Action("Index", "Groups")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Grupos</a>
+                                <a href="@Url.Action("Index", "Sessions")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Sesiones</a>
+                            }
+                            <a href="@Url.Action("Index", "Attendance")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Asistencia</a>
+                            <a href="@Url.Action("Index", "Birthdays")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Cumpleaños</a>
+                            @if (User.IsInRole("admin"))
+                            {
+                                <a href="@Url.Action("Index", "Users")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Gestión Usuarios</a>
+                            }
+                            <a href="@Url.Action("Index", "Community")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Comunidad</a>
+                            <a asp-controller="Donations" asp-action="Index" class="px-3 py-2 rounded-md text-sm font-medium transition-all text-gray-300 hover:bg-white/15 flex items-center space-x-1.5">
+                                <span>Donaciones</span>
+                            </a>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <div class="text-right hidden sm:block">
+                                <div class="text-sm font-bold">@User.Identity.Name</div>
+                                <div class="text-[10px] text-[#C5A059] uppercase tracking-wider font-semibold">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</div>
+                            </div>
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="inline">
+                                <button type="submit" title="Cerrar Sesión" class="p-2 rounded-lg bg-red-600/80 hover:bg-red-600 text-white transition-all">
+                                    <i class="fa-solid fa-right-from-bracket"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        }
+
+        <!-- Área Principal de Contenido -->
+        <main id="main-content-area" class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- Modal Global -->
+    <div id="global-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div id="modal-content" class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all"></div>
+    </div>
+
+    <!-- Scripts auxiliares -->
+    <script>
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-[#1B365D]';
+            toast.className = `${bgColor} text-white px-5 py-3 rounded-lg shadow-lg flex items-center justify-between space-x-3 transition-all transform translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info'}"></i>
+                    <span class="text-sm font-medium">${message}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-white hover:text-gray-200"><i class="fa-solid fa-xmark"></i></button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
