@@ -1,9 +1,18 @@
+using MayordomiaFinanciera.Core.Interfaces;
+using MayordomiaFinanciera.Core.Settings;
+using MayordomiaFinanciera.Infrastructure.Services;
 using MayordomiaFinanciera.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Cargar configuración de SmtpSettings
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+
+// Registrar el servicio de Email
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Forzar a Npgsql a mapear el tipo 'date' de Postgres a DateTime en lugar de DateOnly
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
