@@ -1,0 +1,9 @@
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\bin\Debug\net8.0\MayordomiaFinanciera.Core.deps.json
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\bin\Debug\net8.0\MayordomiaFinanciera.Core.dll
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\bin\Debug\net8.0\MayordomiaFinanciera.Core.pdb
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\obj\Debug\net8.0\MayordomiaFinanciera.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\obj\Debug\net8.0\MayordomiaFinanciera.Core.csproj.CoreCompileInputs.cache
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\obj\Debug\net8.0\MayordomiaFinanciera.Core.dll
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\obj\Debug\net8.0\refint\MayordomiaFinanciera.Core.dll
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\obj\Debug\net8.0\MayordomiaFinanciera.Core.pdb
+C:\MayordomiaFinanciera\MayordomiaFinanciera.Core\obj\Debug\net8.0\ref\MayordomiaFinanciera.Core.dll
