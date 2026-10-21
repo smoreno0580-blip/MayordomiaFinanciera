@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewData["Title"] - Mayordomía Financiera</title>
+    <title>@ViewData["Title"] - Mayordomía y Finanzas</title>
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,13 +11,33 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .bg-compass-navy { background-color: #1B365D; }
-        .text-compass-navy { color: #1B365D; }
-        .bg-compass-gold { background-color: #C5A059; }
-        .text-compass-gold { color: #C5A059; }
-        .border-compass-gold { border-color: #C5A059; }
-        .hover\:bg-compass-gold-dark:hover { background-color: #A88647; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .bg-compass-navy {
+            background-color: #1B365D;
+        }
+
+        .text-compass-navy {
+            color: #1B365D;
+        }
+
+        .bg-compass-gold {
+            background-color: #00A8CC;
+        }
+
+        .text-compass-gold {
+            color: #00A8CC;
+        }
+
+        .border-compass-gold {
+            border-color: #00A8CC;
+        }
+
+        .hover\:bg-compass-gold-dark:hover {
+            background-color: #A88647;
+        }
     </style>
 </head>
 <body class="h-full bg-gray-50 text-gray-800 flex flex-col">
@@ -33,38 +53,65 @@
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between h-16">
                         <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-[#C5A059] rounded-lg flex items-center justify-center">
+                            <div class="w-10 h-10 bg-[#00A8CC] rounded-lg flex items-center justify-center">
                                 <i class="fa-solid fa-scale-balanced text-[#1B365D] font-bold"></i>
                             </div>
                             <div>
                                 <span class="font-bold text-lg tracking-wide">Finanzas Bíblicas</span>
-                                <span class="block text-[10px] text-[#C5A059] uppercase tracking-widest font-semibold">Mayordomía Financiera</span>
+                                <span class="block text-[10px] text-[#00A8CC] uppercase tracking-widest font-semibold">Mayordomía y Finanzas</span>
                             </div>
                         </div>
                         <div class="hidden md:flex items-center space-x-1">
-                            <a href="@Url.Action("Index", "Dashboard")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Dashboard</a>
+                            <!-- Dashboard: Visible solo para admin y teachers -->
+                            @if (!User.IsInRole("student"))
+                            {
+                                <a href="@Url.Action("Index", "Dashboard")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Dashboard</a>
+                            }
+
+                            <!-- Grupos: Restringido estrictamente a admin y teachers -->
                             @if (User.IsInRole("admin") || User.IsInRole("teacher"))
                             {
                                 <a href="@Url.Action("Index", "Groups")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Grupos</a>
-                                <a href="@Url.Action("Index", "Sessions")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Sesiones</a>
                             }
-                            <a href="@Url.Action("Index", "Attendance")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Asistencia</a>
+
+                            <!-- Sesiones: Estudiantes ven "Mi Sesión" filtrada; Admin/Teachers ven el listado completo -->
+                            <a href="@Url.Action("Index", "Sessions")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">
+                                @(User.IsInRole("student") ? "Mi Sesión" : "Sesiones")
+                            </a>
+
+                            <!-- Asistencia: Visible para admin y teachers -->
+                            @if (!User.IsInRole("student"))
+                            {
+                                <a href="@Url.Action("Index", "Attendance")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Asistencia</a>
+                            }
+
+                            <!-- Cumpleaños: Disponible para todos -->
                             <a href="@Url.Action("Index", "Birthdays")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Cumpleaños</a>
+
+                            <!-- Gestión Usuarios: Solo Administradores -->
                             @if (User.IsInRole("admin"))
                             {
                                 <a href="@Url.Action("Index", "Users")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Gestión Usuarios</a>
                             }
+
+                            <!-- Comunidad: Disponible para todos -->
                             <a href="@Url.Action("Index", "Community")" class="px-3 py-2 rounded-md text-sm font-medium transition-all hover:bg-white/15">Comunidad</a>
-                            <a asp-controller="Donations" asp-action="Index" class="px-3 py-2 rounded-md text-sm font-medium transition-all text-gray-300 hover:bg-white/15 flex items-center space-x-1.5">
-                                <span>Donaciones</span>
-                            </a>
+
+                            <!-- Donaciones: Visible solo para admin y teachers -->
+                            @if (!User.IsInRole("student"))
+                            {
+                                <a asp-controller="Donations" asp-action="Index" class="px-3 py-2 rounded-md text-sm font-medium transition-all text-gray-300 hover:bg-white/15 flex items-center space-x-1.5">
+                                    <span>Donaciones</span>
+                                </a>
+                            }
                         </div>
                         <div class="flex items-center space-x-4">
                             <div class="text-right hidden sm:block">
                                 <div class="text-sm font-bold">@User.Identity.Name</div>
-                                <div class="text-[10px] text-[#C5A059] uppercase tracking-wider font-semibold">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</div>
+                                <div class="text-[10px] text-[#00A8CC] uppercase tracking-wider font-semibold">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</div>
                             </div>
                             <form asp-controller="Account" asp-action="Logout" method="post" class="inline">
+                                @Html.AntiForgeryToken()
                                 <button type="submit" title="Cerrar Sesión" class="p-2 rounded-lg bg-red-600/80 hover:bg-red-600 text-white transition-all">
                                     <i class="fa-solid fa-right-from-bracket"></i>
                                 </button>

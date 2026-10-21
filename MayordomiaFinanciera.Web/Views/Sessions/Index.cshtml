@@ -4,14 +4,19 @@
     ViewData["Title"] = "Sesiones del Programa";
     Layout = "_Layout";
     DataTable groupsTable = ViewBag.GroupsList as DataTable ?? new DataTable();
+    bool isStudent = User.IsInRole("student");
 }
 
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
     <div>
-        <h1 class="text-3xl font-extrabold text-[#1B365D]">Sesiones del Programa</h1>
-        <p class="text-gray-500 text-sm mt-1">Planifique los temas, fechas y enlaces de videoconferencia para cada grupo.</p>
+        <h1 class="text-3xl font-extrabold text-[#1B365D]">@(isStudent ? "Mi Sesión y Grupo" : "Sesiones del Programa")</h1>
+        <p class="text-gray-500 text-sm mt-1">
+            @(isStudent ? "Consulte el tema, la fecha y el enlace de videoconferencia correspondiente únicamente a su grupo asignado." : "Planifique los temas, fechas y enlaces de videoconferencia para cada grupo.")
+        </p>
     </div>
-    @if (User.IsInRole("admin") || User.IsInRole("teacher"))
+
+    <!-- Botón de Nueva Sesión protegido estrictamente para no-estudiantes -->
+    @if (!isStudent && (User.IsInRole("admin") || User.IsInRole("teacher")))
     {
         <button onclick="openSessionModal()" class="bg-[#1B365D] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all shadow flex items-center space-x-2">
             <i class="fa-solid fa-plus"></i><span>Nueva Sesión</span>
@@ -19,49 +24,53 @@
     }
 </div>
 
-<!-- Modal / Formulario para Sesión -->
-<div id="session-modal" class="hidden bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8">
-    <h3 id="session-modal-title" class="font-bold text-[#1B365D] text-lg mb-4">Programar Nueva Sesión</h3>
-    <form asp-action="UpsertSession" method="post" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <input type="hidden" id="sessionId" name="id" />
+<!-- Modal / Formulario de Sesión: Bloqueado por completo si el usuario es student -->
+@if (!isStudent && (User.IsInRole("admin") || User.IsInRole("teacher")))
+{
+    <div id="session-modal" class="hidden bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8">
+        <h3 id="session-modal-title" class="font-bold text-[#1B365D] text-lg mb-4">Programar Nueva Sesión</h3>
+        <form asp-action="UpsertSession" method="post" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="sessionId" name="id" />
 
-        <div>
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Número de Sesión</label>
-            <input type="number" id="sessionNumber" name="sessionNumber" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
-        </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Número de Sesión</label>
+                <input type="number" id="sessionNumber" name="sessionNumber" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
 
-        <div>
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Grupo Asignado</label>
-            <select id="sessionGroupId" name="groupId" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white">
-                <option value="">Seleccione un grupo...</option>
-                @foreach (DataRow gRow in groupsTable.Rows)
-                {
-                    <option value="@gRow["Id"]">@gRow["Name"] (@gRow["Country"])</option>
-                }
-            </select>
-        </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Grupo Asignado</label>
+                <select id="sessionGroupId" name="groupId" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                    <option value="">Seleccione un grupo...</option>
+                    @foreach (DataRow gRow in groupsTable.Rows)
+                    {
+                        <option value="@gRow["Id"]">@gRow["Name"] (@gRow["Country"])</option>
+                    }
+                </select>
+            </div>
 
-        <div>
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Fecha</label>
-            <input type="date" id="sessionDate" name="date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
-        </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Fecha</label>
+                <input type="date" id="sessionDate" name="date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
 
-        <div class="md:col-span-2">
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Tema / Título</label>
-            <input type="text" id="sessionTopic" name="topic" required placeholder="Ej: Los principios financieros de Dios" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
-        </div>
+            <div class="md:col-span-2">
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Tema / Título</label>
+                <input type="text" id="sessionTopic" name="topic" required placeholder="Ej: Los principios financieros de Dios" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
 
-        <div>
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Enlace de Zoom</label>
-            <input type="url" id="sessionZoom" name="zoomLink" placeholder="https://zoom.us/..." class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
-        </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Enlace de Zoom</label>
+                <input type="url" id="sessionZoom" name="zoomLink" placeholder="https://zoom.us/..." class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
 
-        <div class="md:col-span-full flex justify-end space-x-3 mt-4">
-            <button type="button" onclick="closeSessionModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold">Cancelar</button>
-            <button type="submit" class="px-5 py-2 bg-[#1B365D] text-white rounded-lg text-sm font-semibold">Guardar Sesión</button>
-        </div>
-    </form>
-</div>
+            <div class="md:col-span-full flex justify-end space-x-3 mt-4">
+                <button type="button" onclick="closeSessionModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold">Cancelar</button>
+                <button type="submit" class="px-5 py-2 bg-[#1B365D] text-white rounded-lg text-sm font-semibold">Guardar Sesión</button>
+            </div>
+        </form>
+    </div>
+}
 
 <!-- Listado de Sesiones -->
 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -74,24 +83,31 @@
                     <th class="p-4">Grupo</th>
                     <th class="p-4">Fecha</th>
                     <th class="p-4">Zoom</th>
-                    <th class="p-4 text-right">Acciones</th>
+                    @if (!isStudent)
+                    {
+                        <th class="p-4 text-right">Acciones</th>
+                    }
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 text-sm">
                 @if (Model == null || Model.Rows.Count == 0)
                 {
-                    <tr><td colspan="6" class="p-6 text-center text-gray-500">No hay sesiones programadas.</td></tr>
+                    <tr>
+                        <td colspan="@(isStudent ? 5 : 6)" class="p-6 text-center text-gray-500">No hay sesiones programadas para su grupo.</td>
+                    </tr>
                 }
                 else
                 {
-                    @foreach (DataRow row in Model.Rows)
+                    foreach (DataRow row in Model.Rows)
                     {
                         string zoom = row["ZoomLink"] != DBNull.Value ? row["ZoomLink"].ToString()! : string.Empty;
                         <tr class="hover:bg-gray-50 transition-all">
                             <td class="p-4 font-bold text-[#1B365D]">Sesión @row["SessionNumber"]</td>
                             <td class="p-4 font-semibold text-gray-800">@row["Topic"]</td>
                             <td class="p-4 text-gray-600">@(row["GroupName"] != DBNull.Value ? row["GroupName"] : "General")</td>
-                            <td class="p-4 text-gray-500"><i class="fa-regular fa-calendar-days mr-1.5 text-[#C5A059]"></i>@Convert.ToDateTime(row["Date"]).ToString("yyyy-MM-dd")</td>
+                            <td class="p-4 text-gray-500">
+                                <i class="fa-regular fa-calendar-days mr-1.5 text-[#00A8CC]"></i>@Convert.ToDateTime(row["Date"]).ToString("yyyy-MM-dd")
+                            </td>
                             <td class="p-4">
                                 @if (!string.IsNullOrEmpty(zoom))
                                 {
@@ -102,21 +118,21 @@
                                     <span class="text-gray-400 text-xs">N/A</span>
                                 }
                             </td>
-                            <td class="p-4 text-right">
-                                <form asp-action="DeleteSession" method="post" class="inline" onsubmit="return confirm('¿Eliminar esta sesión?');">
-                                    <input type="hidden" name="id" value="@row["Id"]" />
-                                    <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
-                                </form>
-                            </td>
-                            <td class="p-4 text-right space-x-2">
-                                <button onclick="editSession('@row["Id"]', '@row["SessionNumber"]', '@row["Topic"]', '@row["GroupId"]', '@Convert.ToDateTime(row["Date"]).ToString("yyyy-MM-dd")', '@row["ZoomLink"]')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Editar">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </button>
-                                <form asp-action="DeleteSession" method="post" class="inline" onsubmit="return confirm('¿Eliminar esta sesión?');">
-                                    <input type="hidden" name="id" value="@row["Id"]" />
-                                    <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
-                                </form>
-                            </td>
+                            @if (!isStudent)
+                            {
+                                <td class="p-4 text-right space-x-2">
+                                    <button onclick="editSession('@row["Id"]', '@row["SessionNumber"]', '@row["Topic"]', '@row["GroupId"]', '@Convert.ToDateTime(row["Date"]).ToString("yyyy-MM-dd")', '@row["ZoomLink"]')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Editar">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <form asp-action="DeleteSession" method="post" class="inline" onsubmit="return confirm('¿Eliminar esta sesión?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@row["Id"]" />
+                                        <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Eliminar">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            }
                         </tr>
                     }
                 }
@@ -125,30 +141,36 @@
     </div>
 </div>
 
-<script>
-    function openSessionModal() {
-        document.getElementById('sessionId').value = '';
-        document.getElementById('sessionNumber').value = '';
-        document.getElementById('sessionTopic').value = '';
-        document.getElementById('sessionGroupId').value = '';
-        document.getElementById('sessionDate').value = '';
-        document.getElementById('sessionZoom').value = '';
-        document.getElementById('session-modal-title').innerText = 'Programar Nueva Sesión';
-        document.getElementById('session-modal').classList.remove('hidden');
-    }
+<!-- Funciones JavaScript de control modal excluidas totalmente para el rol estudiante -->
+@if (!isStudent)
+{
+    @section Scripts {
+        <script>
+            function openSessionModal() {
+                document.getElementById('sessionId').value = '';
+                document.getElementById('sessionNumber').value = '';
+                document.getElementById('sessionTopic').value = '';
+                document.getElementById('sessionGroupId').value = '';
+                document.getElementById('sessionDate').value = '';
+                document.getElementById('sessionZoom').value = '';
+                document.getElementById('session-modal-title').innerText = 'Programar Nueva Sesión';
+                document.getElementById('session-modal').classList.remove('hidden');
+            }
 
-    function editSession(id, number, topic, groupId, date, zoom) {
-        document.getElementById('sessionId').value = id;
-        document.getElementById('sessionNumber').value = number;
-        document.getElementById('sessionTopic').value = topic;
-        document.getElementById('sessionGroupId').value = groupId !== 'null' ? groupId : '';
-        document.getElementById('sessionDate').value = date;
-        document.getElementById('sessionZoom').value = zoom !== 'null' ? zoom : '';
-        document.getElementById('session-modal-title').innerText = 'Editar Sesión';
-        document.getElementById('session-modal').classList.remove('hidden');
-    }
+            function editSession(id, number, topic, groupId, date, zoom) {
+                document.getElementById('sessionId').value = id;
+                document.getElementById('sessionNumber').value = number;
+                document.getElementById('sessionTopic').value = topic;
+                document.getElementById('sessionGroupId').value = groupId !== 'null' ? groupId : '';
+                document.getElementById('sessionDate').value = date;
+                document.getElementById('sessionZoom').value = zoom !== 'null' ? zoom : '';
+                document.getElementById('session-modal-title').innerText = 'Editar Sesión';
+                document.getElementById('session-modal').classList.remove('hidden');
+            }
 
-    function closeSessionModal() {
-        document.getElementById('session-modal').classList.add('hidden');
+            function closeSessionModal() {
+                document.getElementById('session-modal').classList.add('hidden');
+            }
+        </script>
     }
-</script>
+}
