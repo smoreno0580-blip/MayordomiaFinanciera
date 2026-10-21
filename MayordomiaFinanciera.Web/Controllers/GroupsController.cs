@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using MayordomiaFinanciera.Infrastructure.Repositories;
 using System.Data;
+using System.Security.Claims;
 
 namespace MayordomiaFinanciera.Web.Controllers
 {
@@ -16,6 +17,8 @@ namespace MayordomiaFinanciera.Web.Controllers
             _postgresRepository = postgresRepository;
         }
 
+        [HttpGet]
+        [Authorize(Roles = "admin,teacher")]
         public async Task<IActionResult> Index()
         {
             // Obtener Grupos ordenados por fecha de creación
@@ -79,6 +82,7 @@ namespace MayordomiaFinanciera.Web.Controllers
 
         [HttpPost]
         [Authorize(Roles = "admin")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteGroup(Guid id)
         {
             var parameters = new NpgsqlParameter[] { new NpgsqlParameter("@Id", id) };
