@@ -1,8 +1,186 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    Layout = null; // No utiliza el layout del aplicativo interno para mantener un diseño independiente
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mayordomía y Finanzas - Finanzas Bíblicas</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+
+    <!-- Navegación Superior -->
+    <header class="fixed w-full bg-[#1B365D] text-white shadow-lg z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-[#00A8CC] rounded-lg flex items-center justify-center shadow">
+                    <i class="fa-solid fa-scale-balanced text-[#1B365D] font-bold text-xl"></i>
+                </div>
+                <div>
+                    <span class="font-bold text-xl tracking-wide block">Finanzas Bíblicas</span>
+                    <span class="text-[10px] text-[#00A8CC] uppercase tracking-widest font-semibold block">Mayordomía y Finanzas</span>
+                </div>
+            </div>
+
+            <!-- Menú de Navegación -->
+            <nav class="hidden md:flex items-center space-x-8 text-sm font-medium">
+                <a href="#quienes-somos" class="hover:text-[#00A8CC] transition-all">Quiénes Somos</a>
+                <a href="#pilares" class="hover:text-[#00A8CC] transition-all">Nuestros Pilares</a>
+                <a href="#programas" class="hover:text-[#00A8CC] transition-all">Programas</a>
+                <a href="#impacto" class="hover:text-[#00A8CC] transition-all">Comunidad</a>
+            </nav>
+
+            <!-- Accesos al Aplicativo -->
+            <div class="flex items-center space-x-3">
+                <a href="@Url.Action("Login", "Account")" class="px-4 py-2 text-sm font-semibold text-white hover:text-[#00A8CC] transition-all">
+                    Iniciar Sesión
+                </a>
+                <a href="@Url.Action("Login", "Account")#register" class="px-5 py-2.5 rounded-lg text-sm font-bold bg-[#00A8CC] text-white hover:bg-[#0090B0] transition-all shadow">
+                    Registrarse
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sección Hero -->
+    <section class="pt-32 pb-20 bg-gradient-to-br from-[#1B365D] via-[#234373] to-[#12243e] text-white relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
+            <div class="lg:w-1/2 space-y-6 text-center lg:text-left">
+                <span class="bg-[#00A8CC]/20 text-[#00A8CC] border border-[#00A8CC]/40 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider inline-block">
+                    Ministerio Cristocéntrico
+                </span>
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight">
+                    Transforma tus Finanzas con Principios Bíblicos
+                </h1>
+                <p class="text-gray-300 text-base sm:text-lg max-w-xl mx-auto lg:mx-0">
+                    Capacitamos e inspiramos a personas y familias a administrar el dinero y los recursos materiales bajo el diseño y propósito divino.
+                </p>
+                <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
+                    <a href="@Url.Action("Login", "Account")" class="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-bold bg-[#00A8CC] text-white hover:bg-white hover:text-[#1B365D] transition-all shadow-xl text-center">
+                        Ingresar a la Plataforma <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </a>
+                    <a href="#quienes-somos" class="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-bold border border-white/30 hover:bg-white/10 transition-all text-center">
+                        Conoce el Ministerio
+                    </a>
+                </div>
+            </div>
+            <div class="lg:w-1/2 flex justify-center">
+                <div class="relative w-full max-w-md bg-white/10 backdrop-blur-md p-8 rounded-2xl border border-white/20 shadow-2xl">
+                    <div class="text-center space-y-4">
+                        <div class="w-16 h-16 bg-[#00A8CC] rounded-2xl flex items-center justify-center mx-auto shadow-lg">
+                            <i class="fa-solid fa-book-bible text-white text-3xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold">Estudios e Impacto</h3>
+                        <p class="text-sm text-gray-300">
+                            "Del Señor es la tierra y todo lo que hay en ella, el mundo y los que en él habitan." — Salmo 24:1
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Quiénes Somos -->
+    <section id="quienes-somos" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-3xl font-extrabold text-[#1B365D]">¿Quiénes Somos?</h2>
+                <div class="w-20 h-1 bg-[#00A8CC] mx-auto my-4 rounded-full"></div>
+                <p class="text-gray-600">
+                    Somos un ministerio enfocado en la enseñanza práctica y espiritual de la mayordomía financiera, proveyendo herramientas para salir de deudas, ahorrar y generar generosidad radical.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div class="space-y-6">
+                    <div class="flex items-start space-x-4">
+                        <div class="p-3 bg-cyan-50 text-[#00A8CC] rounded-xl font-bold text-xl"><i class="fa-solid fa-bullseye"></i></div>
+                        <div>
+                            <h3 class="text-lg font-bold text-[#1B365D]">Nuestra Misión</h3>
+                            <p class="text-gray-600 text-sm mt-1">Formar discípulos en el área financiera para que vivan en libertad, paz y abundancia con un corazón enfocado en la gran comisión.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-4">
+                        <div class="p-3 bg-sky-50 text-[#00A8CC] rounded-xl font-bold text-xl"><i class="fa-solid fa-eye"></i></div>
+                        <div>
+                            <h3 class="text-lg font-bold text-[#1B365D]">Nuestra Visión</h3>
+                            <p class="text-gray-600 text-sm mt-1">Ver miles de familias libres de deudas, restauradas financieramente e impactando sus comunidades locales mediante la generosidad.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-100 p-8 rounded-2xl border border-gray-200">
+                    <h4 class="font-bold text-[#1B365D] text-xl mb-4">Lo que enseñamos</h4>
+                    <ul class="space-y-3 text-sm text-gray-700">
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#00A8CC] mr-3"></i> Dios es el dueño de todo; somos administradores.</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#00A8CC] mr-3"></i> Cómo elaborar presupuestos bíblicos aplicables.</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#00A8CC] mr-3"></i> Estrategias efectivas para salir de deudas.</li>
+                        <li class="flex items-center"><i class="fa-solid fa-check text-[#00A8CC] mr-3"></i> La cultura del ahorro, inversión y la herencia de bendición.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Pilares -->
+    <section id="pilares" class="py-20 bg-gray-50 border-y border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-3xl font-extrabold text-[#1B365D]">Nuestros Pilares</h2>
+                <div class="w-20 h-1 bg-[#00A8CC] mx-auto my-4 rounded-full"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center space-y-4">
+                    <div class="w-14 h-14 bg-cyan-50 text-[#00A8CC] rounded-2xl flex items-center justify-center text-2xl mx-auto">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-[#1B365D]">Educación Práctica</h3>
+                    <p class="text-gray-600 text-sm">Cursos estructurados por niveles y sesiones diseñadas para la implementación semanal.</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center space-y-4">
+                    <div class="w-14 h-14 bg-sky-50 text-[#00A8CC] rounded-2xl flex items-center justify-center text-2xl mx-auto">
+                        <i class="fa-solid fa-people-group"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-[#1B365D]">Grupos de Discipulado</h3>
+                    <p class="text-gray-600 text-sm">Acompañamiento en grupos reducidos liderados por facilitadores y profesores capacitados.</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center space-y-4">
+                    <div class="w-14 h-14 bg-blue-50 text-[#00A8CC] rounded-2xl flex items-center justify-center text-2xl mx-auto">
+                        <i class="fa-solid fa-hand-holding-heart"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-[#1B365D]">Comunidad y Muro</h3>
+                    <p class="text-gray-600 text-sm">Espacio donde los miembros comparten testimonios, peticiones de oración y victorias financieras.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Llamado a la Acción / Ingreso -->
+    <section class="py-20 bg-[#1B365D] text-white text-center">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl sm:text-4xl font-extrabold mb-4">¿Listo para comenzar tu camino a la libertad financiera?</h2>
+            <p class="text-gray-300 mb-8">Únete a nuestros grupos de estudio y accede a tus sesiones, material y videoconferencias en un solo lugar.</p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="@Url.Action("Login", "Account")" class="px-8 py-4 rounded-xl text-base font-bold bg-[#00A8CC] text-white hover:bg-white hover:text-[#1B365D] transition-all shadow-lg">
+                    Iniciar Sesión en el Aplicativo
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pie de Página -->
+    <footer class="bg-gray-900 text-gray-400 py-8 border-t border-gray-800 text-xs text-center">
+        <p>&copy; @DateTime.Now.Year Mayordomía y Finanzas - Todos los derechos reservados.</p>
+    </footer>
+
+</body>
+</html>

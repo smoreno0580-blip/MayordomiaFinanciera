@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
-using NpgsqlTypes;
 using System.Data;
 using System.Security.Claims;
 
@@ -18,24 +17,45 @@ namespace MayordomiaFinanciera.Web.Controllers
             _postgresRepository = postgresRepository;
         }
 
-        [HttpGet]
-        public IActionResult Login()
+        // Método auxiliar privado para cargar siempre los grupos activos
+        private async Task LoadGroupsAsync()
         {
-            return View(); // Esto renderiza Login.cshtml
+            try
+            {
+                string query = "SELECT id AS \"Id\", name AS \"Name\", country AS \"Country\" FROM groups WHERE is_active = true ORDER BY name ASC;";
+                ViewBag.GroupsList = await _postgresRepository.ExecuteQueryAsync(query);
+            }
+            catch (Exception ex)
+            {
+                ViewBag.GroupsList = new DataTable();
+                System.Diagnostics.Debug.WriteLine($"Error al cargar grupos: {ex.Message}");
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Login()
+        {
+            await LoadGroupsAsync();
+            return View("Login");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Index()
+        {
+            await LoadGroupsAsync();
+            return View("Login");
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(string email, string password)
         {
-            // Cambiado a NpgsqlParameter para PostgreSQL / Supabase
             var parameters = new NpgsqlParameter[]
             {
                 new NpgsqlParameter("@Email", email),
                 new NpgsqlParameter("@PasswordHash", password)
             };
 
-            // Llamada a la función o consulta SQL compatible con Postgres
             DataTable result = await _postgresRepository.ExecuteQueryAsync(
                 "SELECT * FROM users WHERE email = @Email AND password_hash = @PasswordHash",
                 parameters);
@@ -56,14 +76,14 @@ namespace MayordomiaFinanciera.Web.Controllers
                 };
 
                 var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
 
                 return RedirectToAction("Index", "Dashboard");
             }
 
             ModelState.AddModelError(string.Empty, "Correo o contraseña incorrectos.");
-            return View();
+            await LoadGroupsAsync();
+            return View("Login");
         }
 
         [HttpPost]
@@ -74,37 +94,32 @@ namespace MayordomiaFinanciera.Web.Controllers
             return RedirectToAction("Login", "Account");
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Register()
-        {
-            DataTable dtGroups = await _postgresRepository.ExecuteQueryAsync("SELECT * FROM groups WHERE is_active = true", null);
-            ViewBag.GroupsList = dtGroups;
-            return View();
-        }
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(string name, string email, string password, string phone, string country, DateTime? birthDate, Guid? groupId)
+        public async Task<IActionResult> Register(string name, string email, string phone, string password, DateTime birthDate, string country, int? groupId)
         {
-            var parameters = new NpgsqlParameter[]
+            if (ModelState.IsValid)
             {
-                new NpgsqlParameter("@Email", email),
-                new NpgsqlParameter("@PasswordHash", password),
-                new NpgsqlParameter("@Name", name),
-                new NpgsqlParameter("@Phone", (object?)phone ?? DBNull.Value),
-                new NpgsqlParameter("@Role", "student"),
-                new NpgsqlParameter("@Country", country ?? "Panamá"),
-                new NpgsqlParameter("@BirthDate", (object?)birthDate ?? DBNull.Value),
-                new NpgsqlParameter("@GroupId", (object?)groupId ?? DBNull.Value)
-            };
+                string insertSql = @"INSERT INTO users (name, email, phone, password_hash, birth_date, country, group_id, role) 
+                                     VALUES (@name, @email, @phone, @password, @birthDate, @country, @groupId, 'student');";
 
-            string query = @"INSERT INTO users (email, password_hash, name, phone, role, country, birth_date, group_id) 
-                             VALUES (@Email, @PasswordHash, @Name, @Phone, @Role, @Country, @BirthDate, @GroupId)";
+                var parameters = new NpgsqlParameter[]
+                {
+                    new NpgsqlParameter("@name", name ?? (object)DBNull.Value),
+                    new NpgsqlParameter("@email", email ?? (object)DBNull.Value),
+                    new NpgsqlParameter("@phone", phone ?? (object)DBNull.Value),
+                    new NpgsqlParameter("@password", password ?? (object)DBNull.Value),
+                    new NpgsqlParameter("@birthDate", birthDate),
+                    new NpgsqlParameter("@country", country ?? (object)DBNull.Value),
+                    new NpgsqlParameter("@groupId", groupId.HasValue ? groupId.Value : DBNull.Value)
+                };
 
-            await _postgresRepository.ExecuteNonQueryAsync(query, parameters);
+                await _postgresRepository.ExecuteNonQueryAsync(insertSql, parameters);
+                return RedirectToAction("Index", "Dashboard");
+            }
 
-            TempData["SuccessMessage"] = "Registro exitoso. Por favor, inicia sesión.";
-            return RedirectToAction("Login");
+            await LoadGroupsAsync();
+            return View("Login");
         }
     }
 }

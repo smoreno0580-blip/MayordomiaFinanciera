@@ -23,7 +23,7 @@
 
 <!-- Formulario para Nueva Publicación -->
 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-    <h3 class="text-lg font-bold text-[#1B365D] mb-4 flex items-center"><i class="fa-solid fa-pen-to-square text-[#C5A059] mr-2"></i> Nueva Publicación</h3>
+    <h3 class="text-lg font-bold text-[#1B365D] mb-4 flex items-center"><i class="fa-solid fa-pen-to-square text-[#00A8CC] mr-2"></i> Nueva Publicación</h3>
     <form asp-action="CreatePost" method="post" class="space-y-4">
         <!-- Reemplaza el UserId con el ID real del usuario conectado o envíalo por claims -->
         <input type="hidden" name="userId" value="@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? Guid.NewGuid().ToString()" />

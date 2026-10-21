@@ -17,19 +17,19 @@ namespace MayordomiaFinanciera.Web.Controllers
             _postgresRepository = postgresRepository;
         }
 
+        [HttpGet]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> Index()
         {
-            // Consultas directas adaptadas a PostgreSQL con JOIN al nombre del grupo
-            string usersQuery = @"SELECT u.*, g.name AS group_name 
-                                  FROM users u 
-                                  LEFT JOIN groups g ON u.group_id = g.id 
-                                  ORDER BY u.created_at DESC";
+            string sqlUsers = @"SELECT u.id, u.name, u.email, u.phone, u.role, u.country, u.birth_date, u.group_id, g.name AS group_name 
+                        FROM users u 
+                        LEFT JOIN groups g ON u.group_id = g.id 
+                        ORDER BY u.name ASC;";
 
-            DataTable dtUsers = await _postgresRepository.ExecuteQueryAsync(usersQuery, null);
-            DataTable dtGroups = await _postgresRepository.ExecuteQueryAsync("SELECT * FROM groups WHERE is_active = true ORDER BY name", null);
+            ViewBag.GroupsList = await _postgresRepository.ExecuteQueryAsync("SELECT id, name, country FROM groups ORDER BY name ASC;");
+            DataTable users = await _postgresRepository.ExecuteQueryAsync(sqlUsers);
 
-            ViewBag.GroupsList = dtGroups;
-            return View(dtUsers);
+            return View(users);
         }
 
         [HttpPost]
@@ -200,5 +200,7 @@ namespace MayordomiaFinanciera.Web.Controllers
             TempData["Success"] = $"Importación finalizada: {successCount} usuarios procesados con éxito, {errorCount} errores.";
             return RedirectToAction("Index");
         }
+
+        
     }
 }

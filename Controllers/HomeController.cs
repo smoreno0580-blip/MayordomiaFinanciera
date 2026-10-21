@@ -15,6 +15,13 @@ namespace MayordomiaFinanciera.Web.Controllers
 
         public IActionResult Index()
         {
+            // Si el usuario ya inició sesión, redirigirlo automáticamente al Dashboard interno
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            // Si no está logueado, muestra la página web comercial / institucional
             return View();
         }
 
