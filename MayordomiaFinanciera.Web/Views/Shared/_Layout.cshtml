@@ -105,11 +105,17 @@
                                 </a>
                             }
                         </div>
-                        <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-3">
                             <div class="text-right hidden sm:block">
                                 <div class="text-sm font-bold">@User.Identity.Name</div>
                                 <div class="text-[10px] text-[#00A8CC] uppercase tracking-wider font-semibold">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</div>
                             </div>
+
+                            <!-- Botón Cambiar Contraseña en Sesión Activa -->
+                            <button type="button" onclick="openChangePasswordModal()" class="p-2 rounded-lg bg-gray-700/60 hover:bg-gray-700 text-white transition-all" title="Cambiar mi contraseña">
+                                <i class="fa-solid fa-key"></i>
+                            </button>
+
                             <form asp-controller="Account" asp-action="Logout" method="post" class="inline">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" title="Cerrar Sesión" class="p-2 rounded-lg bg-red-600/80 hover:bg-red-600 text-white transition-all">
@@ -133,6 +139,37 @@
         <div id="modal-content" class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all"></div>
     </div>
 
+    <!-- Modal de Cambio de Contraseña de Usuario en Sesión -->
+    <div id="changePasswordModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+                <h3 class="text-xl font-bold text-[#1B365D] flex items-center">
+                    <i class="fa-solid fa-key mr-2 text-[#00A8CC]"></i> Cambiar Mi Contraseña
+                </h3>
+                <button type="button" onclick="closeChangePasswordModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="submitUserChangePassword(event)" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Contraseña Actual</label>
+                    <input type="password" id="current-password" required placeholder="••••••••" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#1B365D] focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nueva Contraseña</label>
+                    <input type="password" id="new-password" required placeholder="••••••••" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#1B365D] focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Confirmar Nueva Contraseña</label>
+                    <input type="password" id="confirm-password" required placeholder="••••••••" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#1B365D] focus:outline-none">
+                </div>
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="closeChangePasswordModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-[#1B365D] text-white rounded-lg text-sm font-semibold">Actualizar Contraseña</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Scripts auxiliares -->
     <script>
         function showToast(message, type = 'success') {
@@ -153,6 +190,53 @@
                 toast.classList.add('translate-y-2', 'opacity-0');
                 setTimeout(() => toast.remove(), 300);
             }, 4000);
+        }
+
+        // Funciones del Modal de Cambio de Contraseña en Sesión Activa
+        function openChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('hidden');
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.add('hidden');
+        }
+
+        async function submitUserChangePassword(e) {
+            e.preventDefault();
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            if (newPassword !== confirmPassword) {
+                alert('Las nuevas contraseñas no coinciden.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/Account/ChangePassword', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: `currentPassword=${encodeURIComponent(currentPassword)}&newPassword=${encodeURIComponent(newPassword)}&confirmPassword=${encodeURIComponent(confirmPassword)}`
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                    closeChangePasswordModal();
+                    document.getElementById('current-password').value = '';
+                    document.getElementById('new-password').value = '';
+                    document.getElementById('confirm-password').value = '';
+                } else {
+                    alert(result.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error al intentar cambiar la contraseña.');
+            }
         }
     </script>
     @await RenderSectionAsync("Scripts", required: false)

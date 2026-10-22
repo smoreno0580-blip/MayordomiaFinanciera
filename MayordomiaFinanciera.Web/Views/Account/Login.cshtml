@@ -84,6 +84,11 @@
                             <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><i class="fa-solid fa-lock"></i></span>
                             <input type="password" name="password" required placeholder="••••••••" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#1B365D] focus:outline-none">
                         </div>
+                        <div class="flex justify-end items-center text-xs mt-2 mb-4">
+                            <button type="button" onclick="openForgotPasswordModal()" class="text-[#00A8CC] hover:underline font-semibold">
+                                ¿Olvidaste tu contraseña?
+                            </button>
+                        </div>
                     </div>
                     <button type="submit" class="w-full bg-[#1B365D] text-white py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-all shadow-md">
                         Ingresar al Sistema
@@ -137,15 +142,14 @@
                                 <option value="">Seleccione un grupo...</option>
                                 @if (ViewBag.GroupsList != null)
                                 {
-                                    var groupsTable = ViewBag.GroupsList as System.Data.DataTable;
-                                    if (groupsTable != null && groupsTable.Rows.Count > 0)
+                                    var groupsTbl = ViewBag.GroupsList as System.Data.DataTable;
+                                    if (groupsTbl != null && groupsTbl.Rows.Count > 0)
                                     {
-                                        foreach (System.Data.DataRow gRow in groupsTable.Rows)
+                                        foreach (System.Data.DataRow gRow in groupsTbl.Rows)
                                         {
-                                            // Soporte híbrido para snake_case y PascalCase
-                                            var gId = groupsTable.Columns.Contains("Id") ? gRow["Id"] : groupsTable.Columns.Contains("id") ? gRow["id"] : null;
-                                            var gName = groupsTable.Columns.Contains("Name") ? gRow["Name"] : groupsTable.Columns.Contains("name") ? gRow["name"] : "";
-                                            var gCountry = groupsTable.Columns.Contains("Country") ? gRow["Country"] : groupsTable.Columns.Contains("country") ? gRow["country"] : "";
+                                            var gId = groupsTbl.Columns.Contains("Id") ? gRow["Id"] : groupsTbl.Columns.Contains("id") ? gRow["id"] : null;
+                                            var gName = groupsTbl.Columns.Contains("Name") ? gRow["Name"] : groupsTbl.Columns.Contains("name") ? gRow["name"] : "";
+                                            var gCountry = groupsTbl.Columns.Contains("Country") ? gRow["Country"] : groupsTbl.Columns.Contains("country") ? gRow["country"] : "";
 
                                             <option value="@gId">@gName (@gCountry)</option>
                                         }
@@ -163,6 +167,70 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Recuperación de Contraseña -->
+<div id="forgotPasswordModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+        <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+            <h3 class="text-xl font-bold text-[#1B365D] flex items-center">
+                <i class="fa-solid fa-lock mr-2 text-[#00A8CC]"></i> Recuperar Contraseña
+            </h3>
+            <button type="button" onclick="closeForgotPasswordModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        <form onsubmit="handleForgotPasswordSubmit(event)" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <p class="text-xs text-gray-600 leading-relaxed">
+                Ingresa tu correo electrónico registrado. Te enviaremos una contraseña temporal a tu bandeja de entrada.
+            </p>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Correo Electrónico</label>
+                <input type="email" id="forgot-email-input" required placeholder="tu_correo@ejemplo.com" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#1B365D] focus:outline-none">
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                <button type="button" onclick="closeForgotPasswordModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold">Cancelar</button>
+                <button type="submit" class="px-5 py-2 bg-[#1B365D] text-white rounded-lg text-sm font-semibold">Enviar Instrucciones</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openForgotPasswordModal() {
+        document.getElementById('forgotPasswordModal').classList.remove('hidden');
+    }
+
+    function closeForgotPasswordModal() {
+        document.getElementById('forgotPasswordModal').classList.add('hidden');
+    }
+
+    async function handleForgotPasswordSubmit(e) {
+        e.preventDefault();
+        const email = document.getElementById('forgot-email-input').value;
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+        try {
+            const response = await fetch('/Account/ForgotPassword', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `email=${encodeURIComponent(email)}`
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                alert(result.message);
+                closeForgotPasswordModal();
+            } else {
+                alert(result.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error al procesar la solicitud de recuperación.');
+        }
+    }
+</script>
 
 @section Scripts {
     <script>

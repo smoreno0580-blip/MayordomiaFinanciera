@@ -143,6 +143,9 @@
                                     <button onclick="editUser('@row["Id"]', '@row["Name"]', '@row["Email"]', '@row["Phone"]', '@row["Role"]', '@row["Country"]', '@row["GroupId"]', '@bDateFormatted')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Editar">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
+                                    <button onclick="openAdminResetModal('@row["Id"]', '@row["Name"]')" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-all" title="Restablecer Contraseña">
+                                        <i class="fa-solid fa-key"></i>
+                                    </button>
                                     @if (row["Email"].ToString() != "admin@panama.org")
                                     {
                                         <form asp-action="DeleteUser" method="post" class="inline" onsubmit="return confirm('¿Está seguro de eliminar este usuario?');">
@@ -184,6 +187,36 @@
         </div>
     </div>
 
+    <!-- Modal de Reseteo de Contraseña Administrativo -->
+    <div id="adminResetModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+                <h3 class="text-xl font-bold text-[#1B365D] flex items-center">
+                    <i class="fa-solid fa-key mr-2 text-[#00A8CC]"></i> Restablecer Contraseña
+                </h3>
+                <button type="button" onclick="closeAdminResetModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="submitAdminResetPassword(event)" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="resetTargetUserId" name="targetUserId" />
+
+                <p class="text-xs text-gray-600">
+                    Estableciendo una nueva contraseña para el usuario: <strong id="resetTargetUserName" class="text-[#1B365D]"></strong>
+                </p>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nueva Contraseña</label>
+                    <input type="password" id="admin-new-password" required placeholder="••••••••" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#1B365D] focus:outline-none">
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="closeAdminResetModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-[#1B365D] text-white rounded-lg text-sm font-semibold">Actualizar Contraseña</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function openImportModal() { document.getElementById('importModal').classList.remove('hidden'); }
         function closeImportModal() { document.getElementById('importModal').classList.add('hidden'); }
@@ -215,6 +248,47 @@
 
         function closeUserModal() {
             document.getElementById('user-modal').classList.add('hidden');
+        }
+
+        // Funciones del Modal de Reseteo Administrativo
+        function openAdminResetModal(userId, userName) {
+            document.getElementById('resetTargetUserId').value = userId;
+            document.getElementById('resetTargetUserName').innerText = userName;
+            document.getElementById('adminResetModal').classList.remove('hidden');
+        }
+
+        function closeAdminResetModal() {
+            document.getElementById('adminResetModal').classList.add('hidden');
+        }
+
+        async function submitAdminResetPassword(e) {
+            e.preventDefault();
+            const targetUserId = document.getElementById('resetTargetUserId').value;
+            const newPassword = document.getElementById('admin-new-password').value;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            try {
+                const response = await fetch('/Account/AdminResetUserPassword', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: `targetUserId=${encodeURIComponent(targetUserId)}&newPassword=${encodeURIComponent(newPassword)}`
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                    closeAdminResetModal();
+                    location.reload();
+                } else {
+                    alert(result.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error de red al intentar restablecer la contraseña.');
+            }
         }
     </script>
 }
