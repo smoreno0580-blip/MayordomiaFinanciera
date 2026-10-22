@@ -87,5 +87,23 @@ namespace MayordomiaFinanciera.Infrastructure.Services
 
             await client.SendMailAsync(mailMessage);
         }
+        public async Task SendEmailAsync(string toEmail, string subject, string body)
+        {
+            var message = new System.Net.Mail.MailMessage
+            {
+                From = new System.Net.Mail.MailAddress(_smtpSettings.SenderEmail, _smtpSettings.SenderName),
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = true
+            };
+            message.To.Add(toEmail);
+
+            using (var client = new System.Net.Mail.SmtpClient(_smtpSettings.Server, _smtpSettings.Port))
+            {
+                client.Credentials = new System.Net.NetworkCredential(_smtpSettings.SenderEmail, _smtpSettings.Password);
+                client.EnableSsl = true;
+                await client.SendMailAsync(message);
+            }
+        }
     }
 }
