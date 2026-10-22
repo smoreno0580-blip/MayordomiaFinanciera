@@ -9,5 +9,7 @@ namespace MayordomiaFinanciera.Core.Interfaces
     public interface IEmailService
     {
         Task SendRegistrationConfirmationAsync(string toEmail, string fullName, string groupName, string username, string rawPassword);
+
+        Task SendEmailAsync(string toEmail, string subject, string body);
     }
 }
