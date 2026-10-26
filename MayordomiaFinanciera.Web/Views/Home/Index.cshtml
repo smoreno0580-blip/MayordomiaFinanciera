@@ -35,6 +35,10 @@
                 <a href="#pilares" class="hover:text-[#00A8CC] transition-all">Nuestros Pilares</a>
                 <a href="#programas" class="hover:text-[#00A8CC] transition-all">Programas</a>
                 <a href="#impacto" class="hover:text-[#00A8CC] transition-all">Comunidad</a>
+                <!-- Enlace de Donaciones en Menú Público -->
+                <a href="@Url.Action("Index", "Donations")" class="text-[#00A8CC] font-bold hover:underline flex items-center space-x-1">
+                    <i class="fa-solid fa-heart mr-1"></i><span>Donar</span>
+                </a>
             </nav>
 
             <!-- Accesos al Aplicativo -->
@@ -160,6 +164,24 @@
                     <h3 class="text-xl font-bold text-[#1B365D]">Comunidad y Muro</h3>
                     <p class="text-gray-600 text-sm">Espacio donde los miembros comparten testimonios, peticiones de oración y victorias financieras.</p>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección de Donaciones / Apoyo Ministerial -->
+    <section class="py-16 bg-white border-b border-gray-200">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+            <div class="bg-gradient-to-r from-sky-50 to-cyan-50 border border-cyan-100 p-8 rounded-2xl shadow-sm">
+                <div class="w-12 h-12 bg-[#00A8CC] text-white rounded-xl flex items-center justify-center mx-auto mb-4 text-xl shadow">
+                    <i class="fa-solid fa-heart"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-[#1B365D] mb-2">Apoya Nuestra Misión</h3>
+                <p class="text-gray-600 text-sm max-w-xl mx-auto mb-6">
+                    Tu generosidad nos permite continuar llevando educación financiera bíblica y recursos de mayordomía a más familias y comunidades. Conoce nuestros métodos de transferencia, Yappy, PayPal y tarjeta de crédito.
+                </p>
+                <a href="@Url.Action("Index", "Donations")" class="inline-flex items-center px-6 py-3 rounded-xl bg-[#00A8CC] text-white font-bold text-sm shadow hover:bg-[#0090B0] transition-all">
+                    <i class="fa-solid fa-hand-holding-dollar mr-2"></i> Ver Opciones de Donación
+                </a>
             </div>
         </div>
     </section>

@@ -1,0 +1,71 @@
+﻿@using System.Data
+@model DataTable
+@{
+    ViewData["Title"] = "Administrar Métodos de Donación";
+    Layout = "_Layout";
+}
+
+<div class="max-w-5xl mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-extrabold text-[#1B365D]">Gestión de Métodos de Donación</h1>
+            <p class="text-gray-600 text-sm mt-1">Actualiza los datos de transferencia, Yappy, PayPal y pasarelas de pago en tiempo real.</p>
+        </div>
+        <a href="@Url.Action("Index", "Donations")" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-300 transition">
+            <i class="fa-solid fa-arrow-left mr-1"></i> Ver Vista Pública
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6">
+        @if (Model != null && Model.Rows.Count > 0)
+        {
+            @foreach (DataRow row in Model.Rows)
+            {
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <form asp-action="UpdateMethod" method="post" class="space-y-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@row["id"]" />
+
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+                            <div>
+                                <span class="text-xs uppercase tracking-wider font-bold text-[#00A8CC] bg-cyan-50 px-3 py-1 rounded-full">
+                                    Método: @row["payment_method"]
+                                </span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" name="isActive" value="true" @(Convert.ToBoolean(row["is_active"]) ? "checked" : "") class="w-4 h-4 text-[#1B365D] rounded border-gray-300 focus:ring-[#1B365D]" />
+                                    <span class="text-xs font-semibold text-gray-700">Visible en la Web</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Título del Método</label>
+                                <input type="text" name="title" value="@row["title"]" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#1B365D]" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Detalles / Instrucciones (Cuentas, Números, Enlaces)</label>
+                            <textarea name="details" rows="4" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-[#1B365D]">@row["details"]</textarea>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-5 py-2.5 bg-[#1B365D] text-white rounded-lg text-sm font-semibold hover:bg-opacity-90 transition shadow">
+                                <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="bg-white p-8 rounded-xl text-center shadow-sm border">
+                <p class="text-gray-500">No se encontraron configuraciones de pago en la base de datos.</p>
+            </div>
+        }
+    </div>
+</div>

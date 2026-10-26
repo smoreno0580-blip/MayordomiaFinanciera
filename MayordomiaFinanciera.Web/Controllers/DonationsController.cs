@@ -1,50 +1,58 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using MayordomiaFinanciera.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
-using MayordomiaFinanciera.Infrastructure.Repositories;
+using System;
 using System.Data;
+using System.Threading.Tasks;
 
-namespace MayordomiaFinanciera.Web.Controllers
+public class DonationsController : Controller
 {
-    [Authorize]
-    public class DonationsController : Controller
+    private readonly PostgresRepository _postgresRepository; // O tu servicio de base de datos actual
+
+    public DonationsController(PostgresRepository postgresRepository)
     {
-        private readonly PostgresRepository _postgresRepository;
+        _postgresRepository = postgresRepository;
+    }
 
-        public DonationsController(PostgresRepository postgresRepository)
+    // Vista pública de Donaciones (para la Landing Page o menú general)
+    [HttpGet]
+    public async Task<IActionResult> Index()
+    {
+        string query = "SELECT * FROM donation_settings WHERE is_active = true ORDER BY id;";
+        var dt = await _postgresRepository.ExecuteQueryAsync(query, null);
+        return View(dt);
+    }
+
+    // Vista de Administración / Edición (Solo Admin)
+    [Authorize(Roles = "admin")]
+    [HttpGet]
+    public async Task<IActionResult> Manage()
+    {
+        string query = "SELECT * FROM donation_settings ORDER BY id;";
+        var dt = await _postgresRepository.ExecuteQueryAsync(query, null);
+        return View(dt);
+    }
+
+    // Acción para actualizar o insertar la información de pago
+    [Authorize(Roles = "admin")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateMethod(int id, string title, string details, bool isActive)
+    {
+        string query = @"UPDATE donation_settings 
+                         SET title = @title, details = @details, is_active = @isActive, updated_at = CURRENT_TIMESTAMP 
+                         WHERE id = @id;";
+
+        var parameters = new NpgsqlParameter[]
         {
-            _postgresRepository = postgresRepository;
-        }
+            new NpgsqlParameter("@id", id),
+            new NpgsqlParameter("@title", title),
+            new NpgsqlParameter("@details", details),
+            new NpgsqlParameter("@isActive", isActive)
+        };
 
-        public IActionResult Index()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RegisterDonation(decimal amount, string paymentMethod)
-        {
-            // Extraer el ID real del usuario desde los claims de la sesión si está disponible
-            string userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            Guid? userId = !string.IsNullOrEmpty(userIdStr) ? Guid.Parse(userIdStr) : null;
-            var userName = User.Identity?.Name ?? "Anónimo";
-
-            // Parámetros adaptados para la función PL/pgSQL sp_save_donation en Supabase
-            var parameters = new NpgsqlParameter[]
-            {
-                new NpgsqlParameter("@p_user_id", (object?)userId ?? DBNull.Value),
-                new NpgsqlParameter("@p_donor_name", userName),
-                new NpgsqlParameter("@p_amount", amount),
-                new NpgsqlParameter("@p_payment_method", paymentMethod)
-            };
-
-            // Invocación del procedimiento/función almacenada en PostgreSQL
-            await _postgresRepository.ExecuteNonQueryAsync("SELECT sp_save_donation(@p_user_id, @p_donor_name, @p_amount, @p_payment_method)", parameters);
-
-            TempData["Success"] = "¡Muchas gracias por tu generosidad! Tu donación ha sido registrada con éxito.";
-
-            return RedirectToAction("Index");
-        }
+        await _postgresRepository.ExecuteNonQueryAsync(query, parameters);
+        return RedirectToAction(nameof(Manage));
     }
 }
