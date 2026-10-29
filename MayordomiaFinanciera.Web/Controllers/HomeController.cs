@@ -44,10 +44,18 @@ namespace MayordomiaFinanciera.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SendContactMessage(string name, string email, string subject, string message)
+        public async Task<IActionResult> SendContactMessage(string name, string email, string subject, string message, string website_hp)
         {
             try
             {
+                // 1. Validación Honeypot: Si el campo oculto contiene texto, es un robot de spam
+                if (!string.IsNullOrEmpty(website_hp))
+                {
+                    // Simulamos éxito para no alertar al robot
+                    TempData["Success"] = "¡Gracias por comunicarte con nosotros! Tu mensaje ha sido enviado exitosamente.";
+                    return Redirect(Url.Action("Index", "Home") + "#contacto");
+                }
+
                 if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(message))
                 {
                     TempData["Error"] = "Por favor completa todos los campos obligatorios.";
