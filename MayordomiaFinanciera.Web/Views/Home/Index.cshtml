@@ -19,30 +19,33 @@
     <header class="fixed w-full bg-[#1B365D] text-white shadow-lg z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
             <!-- Logo -->
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-[#00A8CC] rounded-lg flex items-center justify-center shadow">
-                    <i class="fa-solid fa-scale-balanced text-[#1B365D] font-bold text-xl"></i>
-                </div>
-                <div>
-                    <span class="font-bold text-xl tracking-wide block">Finanzas Bíblicas</span>
-                    <span class="text-[10px] text-[#00A8CC] uppercase tracking-widest font-semibold block">Mayordomía y Finanzas</span>
-                </div>
+            <div class="flex items-center space-x-3 shrink-0">
+                <a href="#hero" class="flex items-center space-x-3 group">
+                    <div class="w-10 h-10 bg-[#00A8CC] rounded-lg flex items-center justify-center shadow">
+                        <i class="fa-solid fa-scale-balanced text-[#1B365D] font-bold text-xl"></i>
+                    </div>
+                    <div class="leading-tight">
+                        <span class="font-bold text-xl tracking-wide block">Finanzas Bíblicas</span>
+                        <span class="text-[10px] text-[#00A8CC] uppercase tracking-widest font-semibold block">Mayordomía y Finanzas</span>
+                    </div>
+                </a>
             </div>
 
             <!-- Menú de Navegación -->
-            <nav class="hidden md:flex items-center space-x-8 text-sm font-medium">
+            <nav class="hidden lg:flex items-center space-x-6 text-sm font-medium">
                 <a href="#quienes-somos" class="hover:text-[#00A8CC] transition-all">Quiénes Somos</a>
                 <a href="#pilares" class="hover:text-[#00A8CC] transition-all">Nuestros Pilares</a>
                 <a href="#programas" class="hover:text-[#00A8CC] transition-all">Programas</a>
                 <a href="#impacto" class="hover:text-[#00A8CC] transition-all">Comunidad</a>
-                <!-- Enlace de Donaciones en Menú Público -->
+                <a href="#contacto" class="hover:text-[#00A8CC] transition-all">Contáctenos</a>
+                <!-- Enlace de Donaciones -->
                 <a href="@Url.Action("Index", "Donations")" class="text-[#00A8CC] font-bold hover:underline flex items-center space-x-1">
                     <i class="fa-solid fa-heart mr-1"></i><span>Donar</span>
                 </a>
             </nav>
 
             <!-- Accesos al Aplicativo -->
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-3 shrink-0">
                 <a href="@Url.Action("Login", "Account")" class="px-4 py-2 text-sm font-semibold text-white hover:text-[#00A8CC] transition-all">
                     Iniciar Sesión
                 </a>
@@ -54,7 +57,7 @@
     </header>
 
     <!-- Sección Hero -->
-    <section class="pt-32 pb-20 bg-gradient-to-br from-[#1B365D] via-[#234373] to-[#12243e] text-white relative overflow-hidden">
+    <section id="hero" class="pt-32 pb-20 bg-gradient-to-br from-[#1B365D] via-[#234373] to-[#12243e] text-white relative overflow-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
             <div class="lg:w-1/2 space-y-6 text-center lg:text-left">
                 <span class="bg-[#00A8CC]/20 text-[#00A8CC] border border-[#00A8CC]/40 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider inline-block">
@@ -168,6 +171,145 @@
         </div>
     </section>
 
+    <!-- Sección Programas Educativos -->
+    <section id="programas" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-3xl font-extrabold text-[#1B365D]">Nuestros Programas</h2>
+                <div class="w-20 h-1 bg-[#00A8CC] mx-auto my-4 rounded-full"></div>
+                <p class="text-gray-600">
+                    Diseñados para acompañarte en cada etapa de tu aprendizaje y crecimiento financiero integral. Utilizamos material y libros de trabajo de Compass Financial Ministry.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Programa 1 -->
+                <div class="bg-gray-50 rounded-2xl p-8 border border-gray-200 flex flex-col justify-between hover:shadow-lg transition">
+                    <div>
+                        <div class="text-xs font-bold uppercase tracking-wider text-[#00A8CC] bg-cyan-50 inline-block px-3 py-1 rounded-full mb-4">
+                            Duración • 10 Semanas
+                        </div>
+                        <h3 class="text-2xl font-bold text-[#1B365D] mb-3">Construye tus finanzas a la manera de Dios</h3>
+                        <p class="text-gray-600 text-sm mb-6">Estudio de discipulado financiero en donde aprendemos la perspectiva bíblica del dinero, la propiedad divina y como podemos ser libres financieramente.</p>
+                        <ul class="space-y-2 text-xs text-gray-700 mb-6">
+                            <li class="flex items-center"><i class="fa-solid fa-check text-[#00A8CC] mr-2"></i> La parte de Dios y Nuestra Parte</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-[#00A8CC] mr-2"></i> Las deudas, la honestidad y el trabajo</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-[#00A8CC] mr-2"></i> Inversiones, ahorros y pensando en la eternidad</li>
+                        </ul>
+                    </div>
+                    <a href="@Url.Action("Login", "Account")#register" class="block text-center w-full py-3 bg-[#1B365D] text-white font-bold text-sm rounded-xl hover:bg-opacity-90 transition">Inscribirme</a>
+                </div>
+
+                <!-- Programa 2 -->
+                <div class="bg-gray-50 rounded-2xl p-8 border border-[#00A8CC]/40 relative flex flex-col justify-between shadow-md hover:shadow-xl transition">
+                    <span class="absolute -top-3 right-6 bg-[#00A8CC] text-white text-[10px] uppercase font-bold px-3 py-1 rounded-full shadow">Más Popular</span>
+                    <div>
+                        <div class="text-xs font-bold uppercase tracking-wider text-[#00A8CC] bg-cyan-50 inline-block px-3 py-1 rounded-full mb-4">
+                            Duración • 6 Semanas
+                        </div>
+                        <h3 class="text-2xl font-bold text-[#1B365D] mb-3">¿Cómo llego a fin de mes?</h3>
+                        <p class="text-gray-600 text-sm mb-6">Aprende cómo estirar tu salario, no solo para lograr que te alcance ¡sino para convertirlo en el instrumento principal para alcanzar tus metas nancieras!.</p>
+                        <ul class="space-y-2 text-xs text-gray-700 mb-6">
+                            <li class="flex items-center"><i class="fa-solid fa-check text-[#00A8CC] mr-2"></i> Principios y caracter de la prosperidad integral</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-[#00A8CC] mr-2"></i> Ingredientes para el exito económico</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-[#00A8CC] mr-2"></i> Aplicando la sabiduria</li>
+                        </ul>
+                    </div>
+                    <a href="@Url.Action("Login", "Account")#register" class="block text-center w-full py-3 bg-[#00A8CC] text-white font-bold text-sm rounded-xl hover:bg-[#0090B0] transition">Inscribirme</a>
+                </div>
+
+                <!-- Programa 3 -->
+                <div class="bg-gray-50 rounded-2xl p-8 border border-gray-200 flex flex-col justify-between hover:shadow-lg transition">
+                    <div>
+                        <div class="text-xs font-bold uppercase tracking-wider text-[#00A8CC] bg-cyan-50 inline-block px-3 py-1 rounded-full mb-4">
+                            Duración • 10 Semanas
+                        </div>
+                        <h3 class="text-2xl font-bold text-[#1B365D] mb-3">Discipulado financiero para jovenes</h3>
+                        <p class="text-gray-600 text-sm mb-6">Principios financieros aplicados para jovenes con una perspectiva Bíblica.</p>
+                        <ul class="space-y-2 text-xs text-gray-700 mb-6">
+                            <li class="flex items-center"><i class="fa-solid fa-check text-[#00A8CC] mr-2"></i> La parte de Dios en las finanzas</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-[#00A8CC] mr-2"></i> Nuestra parte</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-[#00A8CC] mr-2"></i> Ahorros e inversiones, honestidad</li>
+                        </ul>
+                    </div>
+                    <a href="@Url.Action("Login", "Account")#register" class="block text-center w-full py-3 bg-[#1B365D] text-white font-bold text-sm rounded-xl hover:bg-opacity-90 transition">Inscribirme</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Comunidad e Impacto -->
+    <section id="impacto" class="py-20 bg-gray-50 border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-3xl font-extrabold text-[#1B365D]">Nuestra Comunidad</h2>
+                <div class="w-20 h-1 bg-[#00A8CC] mx-auto my-4 rounded-full"></div>
+                <p class="text-gray-600">
+                    Cientos de estudiantes y familias transformadas a través del estudio en comunidad.
+                </p>
+            </div>
+
+            <!-- Métricas de Impacto -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16 text-center">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="text-3xl font-extrabold text-[#1B365D] mb-1">+300</div>
+                    <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Estudiantes Graduados</div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="text-3xl font-extrabold text-[#00A8CC] mb-1">+40</div>
+                    <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Familias alcanzadas</div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="text-3xl font-extrabold text-[#1B365D] mb-1">+5</div>
+                    <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Países Impactados</div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="text-3xl font-extrabold text-[#00A8CC] mb-1">100%</div>
+                    <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Fundamento Bíblico</div>
+                </div>
+            </div>
+
+            <!-- Testimonios -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative">
+                    <i class="fa-solid fa-quote-right text-gray-100 text-5xl absolute top-4 right-4"></i>
+                    <p class="text-gray-600 text-sm mb-6 relative z-10">"Estábamos ahogados en tarjetas de crédito. A través del estudio aprendimos a ponernos de acuerdo y en 8 meses pagamos más del 60% de nuestras deudas."</p>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-[#1B365D] text-white rounded-full flex items-center justify-center font-bold text-sm">CR</div>
+                        <div>
+                            <div class="text-sm font-bold text-[#1B365D]">Carlos y Rosa M.</div>
+                            <div class="text-xs text-gray-400">Panamá</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative">
+                    <i class="fa-solid fa-quote-right text-gray-100 text-5xl absolute top-4 right-4"></i>
+                    <p class="text-gray-600 text-sm mb-6 relative z-10">"Entender que Dios es el dueño de todo cambió mi perspectiva sobre mi negocio. Ahora administro con paz y un propósito claro de bendecir a otros."</p>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-[#00A8CC] text-white rounded-full flex items-center justify-center font-bold text-sm">AG</div>
+                        <div>
+                            <div class="text-sm font-bold text-[#1B365D]">Andrés G.</div>
+                            <div class="text-xs text-gray-400">Panamá</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative">
+                    <i class="fa-solid fa-quote-right text-gray-100 text-5xl absolute top-4 right-4"></i>
+                    <p class="text-gray-600 text-sm mb-6 relative z-10">"El material esta enfocado 100% en la Biblia y me ayudo a mejorar mi vida espiritual y mi relacion con Dios.¡100% recomendado!"</p>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-[#1B365D] text-white rounded-full flex items-center justify-center font-bold text-sm">ML</div>
+                        <div>
+                            <div class="text-sm font-bold text-[#1B365D]">Maria L.</div>
+                            <div class="text-xs text-gray-400">Venezuela</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Sección de Donaciones / Apoyo Ministerial -->
     <section class="py-16 bg-white border-b border-gray-200">
         <div class="max-w-4xl mx-auto px-4 text-center">
@@ -182,6 +324,102 @@
                 <a href="@Url.Action("Index", "Donations")" class="inline-flex items-center px-6 py-3 rounded-xl bg-[#00A8CC] text-white font-bold text-sm shadow hover:bg-[#0090B0] transition-all">
                     <i class="fa-solid fa-hand-holding-dollar mr-2"></i> Ver Opciones de Donación
                 </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Contáctenos -->
+    <section id="contacto" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-3xl font-extrabold text-[#1B365D]">Contáctenos</h2>
+                <div class="w-20 h-1 bg-[#00A8CC] mx-auto my-4 rounded-full"></div>
+                <p class="text-gray-600">
+                    ¿Tienes dudas sobre los cursos, grupos de estudio o deseas llevar el ministerio a tu iglesia? Escríbenos o llámanos.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Información de Contacto -->
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex items-start space-x-4">
+                        <div class="w-12 h-12 bg-cyan-50 text-[#00A8CC] rounded-xl flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-envelope"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-[#1B365D] text-base">Correo Electrónico</h4>
+                            <p class="text-xs text-gray-500 mt-1">Atención general e informes:</p>
+                            <a href="mailto:panama@compassfinancialministry.org" class="text-sm font-semibold text-[#00A8CC] hover:underline block mt-1">panama@compassfinancialministry.org</a>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex items-start space-x-4">
+                        <div class="w-12 h-12 bg-sky-50 text-[#00A8CC] rounded-xl flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-phone"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-[#1B365D] text-base">Teléfonos & WhatsApp</h4>
+                            <p class="text-xs text-gray-500 mt-1">Lunes a Viernes (8:00 AM - 5:00 PM):</p>
+                            <a href="tel:+50762132831" class="text-sm font-semibold text-[#1B365D] block mt-1">+507 6213-2831</a>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex items-start space-x-4">
+                        <div class="w-12 h-12 bg-blue-50 text-[#00A8CC] rounded-xl flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-[#1B365D] text-base">Ubicación</h4>
+                            <p class="text-xs text-gray-500 mt-1">La Chorrera, Panamá Oeste, República de Panamá</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulario de Mensaje -->
+                <div class="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                    <h3 class="text-xl font-bold text-[#1B365D] mb-6">Envíanos un Mensaje Directo</h3>
+
+                    <!-- Alertas temporales de éxito o error -->
+                    @if (TempData["Success"] != null)
+                    {
+                        <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+                            @TempData["Success"]
+                        </div>
+                    }
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                            @TempData["Error"]
+                        </div>
+                    }
+
+                    <form asp-controller="Home" asp-action="SendContactMessage" method="post" class="space-y-4">
+                        @Html.AntiForgeryToken()
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nombre Completo</label>
+                                <input type="text" name="name" required placeholder="Tu nombre" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#1B365D] focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Correo Electrónico</label>
+                                <input type="email" name="email" required placeholder="tu@correo.com" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#1B365D] focus:outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Asunto</label>
+                            <input type="text" name="subject" required placeholder="Ej. Información sobre grupos para mi iglesia" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#1B365D] focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Mensaje</label>
+                            <textarea name="message" rows="4" required placeholder="Escribe tu consulta aquí..." class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#1B365D] focus:outline-none"></textarea>
+                        </div>
+                        <div class="text-right">
+                            <button type="submit" class="px-6 py-3 bg-[#1B365D] text-white font-bold text-sm rounded-xl hover:bg-opacity-90 transition shadow">
+                                <i class="fa-solid fa-paper-plane mr-2"></i> Enviar Consulta
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </section>
