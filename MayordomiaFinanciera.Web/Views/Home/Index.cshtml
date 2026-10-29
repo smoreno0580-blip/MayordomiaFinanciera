@@ -395,6 +395,10 @@
 
                     <form asp-controller="Home" asp-action="SendContactMessage" method="post" class="space-y-4">
                         @Html.AntiForgeryToken()
+                        <!-- CAMPO HONEYPOT (Trampa para Bots - Oculto vía CSS) -->
+                        <div style="display:none;" aria-hidden="true">
+                            <input type="text" name="website_hp" tabindex="-1" autocomplete="off" />
+                        </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Nombre Completo</label>
