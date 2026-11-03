@@ -1,0 +1,105 @@
+﻿@{
+    ViewData["Title"] = "Herramientas Financieras";
+    Layout = "_Layout";
+}
+
+<div class="max-w-7xl mx-auto px-4 py-10 space-y-8">
+
+    <!-- Header del Módulo -->
+    <div class="bg-[#1B365D] text-white p-8 rounded-3xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
+        <div class="z-10 max-w-2xl">
+            <span class="text-xs font-bold uppercase text-[#00A8CC] tracking-widest block mb-2">Plataforma de Mayordomía</span>
+            <h1 class="text-3xl font-black flex items-center">
+                <i class="fa-solid fa-toolbox text-[#00A8CC] mr-3"></i> Herramientas de Control Financiero
+            </h1>
+            <p class="text-gray-300 text-sm mt-2 leading-relaxed">
+                Aplica principios bíblicos de administración mediante nuestras calculadoras e instrumentos de gestión. Planifica tu presupuesto, evalúa tu patrimonio y diseña una estrategia efectiva para liberarte de deudas.
+            </p>
+        </div>
+        <div class="z-10">
+            <span class="bg-[#00A8CC]/20 border border-[#00A8CC] text-[#00A8CC] px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider">
+                3 Herramientas Disponibles
+            </span>
+        </div>
+    </div>
+
+    <!-- Grid de Tarjetas de Herramientas -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+        <!-- Tarjeta 1: Presupuesto Mensual -->
+        <div class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+            <div class="space-y-4">
+                <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-calculator"></i>
+                </div>
+                <h2 class="text-xl font-extrabold text-[#1B365D]">Presupuesto Mensual</h2>
+                <p class="text-gray-500 text-xs leading-relaxed">
+                    Registra tus ingresos, diezmos e impuestos, y organiza tus 14 rubros de gastos de vida. Incluye comparativos históricos mes a mes con alertas de variación de consumo.
+                </p>
+                <div class="pt-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                        Orden Bíblico de Prioridades
+                    </span>
+                </div>
+            </div>
+
+            <div class="pt-8 mt-6 border-t border-gray-100">
+                <a href="@Url.Action("Index", "Budget")" class="w-full py-3 bg-[#1B365D] text-white font-bold text-sm rounded-xl hover:bg-[#00A8CC] transition flex items-center justify-center space-x-2 shadow">
+                    <span>Abrir Presupuesto</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Tarjeta 2: Estado Financiero Personal -->
+        <div class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+            <div class="space-y-4">
+                <div class="w-14 h-14 bg-cyan-100 text-cyan-600 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                </div>
+                <h2 class="text-xl font-extrabold text-[#1B365D]">Estado Financiero</h2>
+                <p class="text-gray-500 text-xs leading-relaxed">
+                    Determina la salud real de tu patrimonio personal o familiar. Mide tus Activos totales contra tus Pasivos (compromisos) para conocer tu valor neto actualizado.
+                </p>
+                <div class="pt-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                        Balance Activos vs Pasivos
+                    </span>
+                </div>
+            </div>
+
+            <div class="pt-8 mt-6 border-t border-gray-100">
+                <a href="@Url.Action("Index", "FinancialStatement")" class="w-full py-3 bg-[#1B365D] text-white font-bold text-sm rounded-xl hover:bg-[#00A8CC] transition flex items-center justify-center space-x-2 shadow">
+                    <span>Abrir Estado Financiero</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Tarjeta 3: Bola de Nieve -->
+        <div class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+            <div class="space-y-4">
+                <div class="w-14 h-14 bg-blue-100 text-[#00A8CC] rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-snowflake"></i>
+                </div>
+                <h2 class="text-xl font-extrabold text-[#1B365D]">Plan Bola de Nieve</h2>
+                <p class="text-gray-500 text-xs leading-relaxed">
+                    Estrategia acelerada para eliminar tus deudas. Ordena tus acreedores de menor a mayor saldo y proyecta en cuántos meses lograrás la libertad financiera total.
+                </p>
+                <div class="pt-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                        Estrategia de Salida de Deudas
+                    </span>
+                </div>
+            </div>
+
+            <div class="pt-8 mt-6 border-t border-gray-100">
+                <a href="@Url.Action("Index", "DebtSnowball")" class="w-full py-3 bg-[#1B365D] text-white font-bold text-sm rounded-xl hover:bg-[#00A8CC] transition flex items-center justify-center space-x-2 shadow">
+                    <span>Abrir Bola de Nieve</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>

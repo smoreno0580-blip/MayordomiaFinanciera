@@ -1,7 +1,8 @@
 using MayordomiaFinanciera.Core.Interfaces;
 using MayordomiaFinanciera.Core.Settings;
-using MayordomiaFinanciera.Infrastructure.Services;
 using MayordomiaFinanciera.Infrastructure.Repositories;
+using MayordomiaFinanciera.Infrastructure.Services;
+using MayordomiaFinanciera.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
@@ -31,6 +32,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.SameSite = SameSiteMode.Strict; // Protege contra CSRF
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
     });
+
+builder.Services.AddScoped<IBudgetRepository, BudgetRepository>();
+
+builder.Services.AddScoped<IFinancialStatementRepository, FinancialStatementRepository>();
+
+builder.Services.AddScoped<IDebtSnowballRepository, DebtSnowballRepository>();
 
 // 3. Configurar Limitador de Peticiones para evitar Ataques de Fuerza Bruta (Paso 6)
 builder.Services.AddRateLimiter(options =>

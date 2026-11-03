@@ -1,0 +1,440 @@
+﻿@model MayordomiaFinanciera.Web.Models.Budget.BudgetViewModels
+@{
+    ViewData["Title"] = "Presupuesto Mensual Estimado";
+    Layout = "_Layout";
+}
+
+<div class="space-y-6">
+
+    <!-- Header y Filtros Catálogos -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-[#1B365D] text-white p-6 rounded-2xl shadow-lg">
+        <div>
+            <span class="text-xs font-bold uppercase text-[#00A8CC] tracking-widest block mb-1">Mayordomía Financiera</span>
+            <h1 class="text-2xl font-extrabold flex items-center">
+                <i class="fa-solid fa-calculator text-[#00A8CC] mr-3"></i> Presupuesto Mensual Estimado
+            </h1>
+            <p class="text-gray-300 text-xs mt-1">Sigue el orden bíblico: Administrar → Dar → Impuestos → Gastos de Vida.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            <select id="budget-month" onchange="changePeriod()" class="px-3 py-2 bg-white/10 text-white rounded-lg text-sm font-semibold border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#00A8CC]">
+                @foreach (var month in Model.AvailableMonths)
+                {
+                    if (month.MonthNumber == Model.SelectedMonth)
+                    {
+                        <option value="@month.MonthNumber" selected class="bg-[#1B365D] text-white">@month.MonthName</option>
+                    }
+                    else
+                    {
+                        <option value="@month.MonthNumber" class="bg-[#1B365D] text-white">@month.MonthName</option>
+                    }
+                }
+            </select>
+
+            <select id="budget-year" onchange="changePeriod()" class="px-3 py-2 bg-white/10 text-white rounded-lg text-sm font-semibold border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#00A8CC]">
+                @foreach (var year in Model.AvailableYears)
+                {
+                    if (year.YearValue == Model.SelectedYear)
+                    {
+                        <option value="@year.YearValue" selected class="bg-[#1B365D] text-white">@year.YearValue</option>
+                    }
+                    else
+                    {
+                        <option value="@year.YearValue" class="bg-[#1B365D] text-white">@year.YearValue</option>
+                    }
+                }
+            </select>
+
+            <button type="button" onclick="openComparisonModal()" class="px-4 py-2 bg-[#00A8CC] text-white rounded-lg font-bold text-sm hover:bg-[#0090B0] transition shadow">
+                <i class="fa-solid fa-chart-line mr-1"></i> Comparar Histórico
+            </button>
+        </div>
+    </div>
+
+    <!-- KPIs de Salud Financiera -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Ingresos</span>
+            <div id="kpi-gross-income" class="text-lg font-black text-gray-800 mt-1">$0.00</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">1. Dar / 2. Impuestos</span>
+            <div id="kpi-giving-tax" class="text-lg font-black text-[#00A8CC] mt-1">$0.00</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Ingreso Neto Disponible</span>
+            <div id="kpi-net-income" class="text-lg font-black text-emerald-600 mt-1">$0.00</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Gastos de Vida Totales</span>
+            <div id="kpi-living-expenses" class="text-lg font-black text-red-500 mt-1">$0.00</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Excedente o Déficit</span>
+            <div id="kpi-surplus-deficit" class="text-lg font-black text-[#1B365D] mt-1">$0.00</div>
+        </div>
+    </div>
+
+    <!-- Formulario en 2 Columnas -->
+    <form id="budget-form" onsubmit="saveBudget(event)" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        @Html.AntiForgeryToken()
+
+        <!-- Columna Izquierda -->
+        <div class="space-y-6">
+
+            <!-- Ingreso Mensual -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <h3 class="text-sm font-extrabold text-[#1B365D] border-b pb-2 mb-3 flex items-center justify-between">
+                    <span><i class="fa-solid fa-wallet text-emerald-500 mr-2"></i> Ingreso Mensual</span>
+                    <span id="subtotal-income" class="text-xs font-mono font-bold text-emerald-600">$0.00</span>
+                </h3>
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between text-xs">
+                        <label class="text-gray-700 font-medium">Ingreso Esposa</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="incomeEsposa" class="w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono text-xs focus:ring-2 focus:ring-[#1B365D]" placeholder="0.00">
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <label class="text-gray-700 font-medium">Ingreso Esposo</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="incomeEsposo" class="w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono text-xs focus:ring-2 focus:ring-[#1B365D]" placeholder="0.00">
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <label class="text-gray-700 font-medium">Negocios</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="incomeNegocios" class="w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono text-xs focus:ring-2 focus:ring-[#1B365D]" placeholder="0.00">
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <label class="text-gray-700 font-medium">Otros ingresos</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="incomeOtros" class="w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono text-xs focus:ring-2 focus:ring-[#1B365D]" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menos: 1. Dar & 2. Impuestos -->
+            <div class="bg-cyan-50/60 p-5 rounded-2xl shadow-sm border border-cyan-200">
+                <h3 class="text-sm font-extrabold text-[#1B365D] border-b border-cyan-200 pb-2 mb-3">Menos:</h3>
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between text-xs">
+                        <label class="text-gray-800 font-bold">1. Dar</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="giving" class="w-28 px-2.5 py-1 border border-cyan-300 rounded-lg text-right font-mono text-xs font-bold bg-white focus:ring-2 focus:ring-[#00A8CC]" placeholder="0.00">
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <label class="text-gray-800 font-bold">2. Impuestos</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="taxes" class="w-28 px-2.5 py-1 border border-cyan-300 rounded-lg text-right font-mono text-xs font-bold bg-white focus:ring-2 focus:ring-[#00A8CC]" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Vivienda -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <h3 class="text-sm font-extrabold text-[#1B365D] border-b pb-2 mb-3 flex items-center justify-between">
+                    <span>3. Vivienda</span>
+                    <span id="subtotal-vivienda" class="text-xs font-mono font-bold text-gray-700">$0.00</span>
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                    <div>
+                        <label class="text-[11px] text-gray-600 block mb-0.5">Hipoteca (Alquiler)</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="viviendaHipoteca" class="expense-item w-full px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-gray-600 block mb-0.5">Seguro</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="viviendaSeguro" class="expense-item w-full px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-gray-600 block mb-0.5">Impuestos propiedad</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="viviendaImpuestos" class="expense-item w-full px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-gray-600 block mb-0.5">Electricidad / Agua / Gas</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="viviendaServicios" class="expense-item w-full px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-gray-600 block mb-0.5">Internet / Telecom</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="viviendaTelecom" class="expense-item w-full px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-gray-600 block mb-0.5">Mantenimiento</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="viviendaMantenimiento" class="expense-item w-full px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Comida & 5. Transporte & 6. Seguros -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-3">
+                <div class="flex justify-between items-center text-xs font-bold text-[#1B365D]">
+                    <label>4. Comida</label>
+                    <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="comidaTotal" class="expense-item w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono font-normal" placeholder="0.00">
+                </div>
+                <div class="border-t pt-2 flex justify-between items-center text-xs font-bold text-[#1B365D]">
+                    <label>5. Transporte</label>
+                    <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="transporteTotal" class="expense-item w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono font-normal" placeholder="0.00">
+                </div>
+                <div class="border-t pt-2 flex justify-between items-center text-xs font-bold text-[#1B365D]">
+                    <label>6. Seguros</label>
+                    <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="segurosTotal" class="expense-item w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono font-normal" placeholder="0.00">
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Columna Derecha -->
+        <div class="space-y-6">
+
+            <!-- 7. Deudas -->
+            <div class="bg-red-50/50 p-5 rounded-2xl shadow-sm border border-red-200">
+                <h3 class="text-sm font-extrabold text-red-900 border-b border-red-200 pb-2 mb-3 flex justify-between">
+                    <span>7. Deudas</span>
+                    <span id="subtotal-deudas" class="text-xs font-mono font-bold text-red-700">$0.00</span>
+                </h3>
+                <div class="space-y-2.5 text-xs">
+                    <div class="flex justify-between items-center">
+                        <label class="text-gray-700">Tarjetas de Crédito</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="deudasTarjetas" class="expense-item w-28 px-2.5 py-1 border border-red-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <label class="text-gray-700">Préstamos Personal</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="deudasPrestamo" class="expense-item w-28 px-2.5 py-1 border border-red-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <label class="text-gray-700">Otro</label>
+                        <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="deudasOtro" class="expense-item w-28 px-2.5 py-1 border border-red-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categorías 8 a 14 -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-3 text-xs">
+                <div class="flex justify-between items-center">
+                    <label class="font-semibold text-gray-800">8. Entretenimiento y Recreación</label>
+                    <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="entretenimientoTotal" class="expense-item w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                </div>
+                <div class="flex justify-between items-center border-t pt-2">
+                    <label class="font-semibold text-gray-800">9. Ropa</label>
+                    <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="ropaTotal" class="expense-item w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                </div>
+                <div class="flex justify-between items-center border-t pt-2">
+                    <label class="font-semibold text-gray-800">10. Ahorros</label>
+                    <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="ahorrosTotal" class="expense-item w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                </div>
+                <div class="flex justify-between items-center border-t pt-2">
+                    <label class="font-semibold text-gray-800">11. Gastos Médicos</label>
+                    <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="medicosTotal" class="expense-item w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                </div>
+                <div class="flex justify-between items-center border-t pt-2">
+                    <label class="font-semibold text-gray-800">12. Gastos Misceláneos</label>
+                    <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="miscelaneosTotal" class="expense-item w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                </div>
+                <div class="flex justify-between items-center border-t pt-2">
+                    <label class="font-semibold text-gray-800">13. Inversiones</label>
+                    <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="inversionesTotal" class="expense-item w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                </div>
+                <div class="flex justify-between items-center border-t pt-2">
+                    <label class="font-semibold text-gray-800">14. Escuela / Cuidado de niños</label>
+                    <input type="number" step="0.01" min="0" oninput="strictNumeric(this); calculateAll();" name="escuelaTotal" class="expense-item w-28 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                </div>
+            </div>
+
+            <!-- Cierre: Como Resulta el Mes -->
+            <div class="bg-[#1B365D] text-white p-5 rounded-2xl shadow-md space-y-2.5">
+                <h3 class="text-xs font-extrabold text-[#00A8CC] uppercase tracking-wider">Cómo Resulta el Mes</h3>
+                <div class="flex justify-between text-xs">
+                    <span>Ingreso Neto Disponible</span>
+                    <span id="close-net-income" class="font-mono font-bold">$0.00</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                    <span>Menos Gastos de Vida Totales</span>
+                    <span id="close-expenses" class="font-mono font-bold text-red-300">$0.00</span>
+                </div>
+                <div class="border-t border-white/20 pt-2.5 flex justify-between text-base font-black">
+                    <span>Excedente o Déficit:</span>
+                    <span id="close-result" class="font-mono text-[#00A8CC]">$0.00</span>
+                </div>
+
+                <button type="submit" class="w-full mt-3 py-2.5 bg-[#00A8CC] text-white font-bold text-xs rounded-xl hover:bg-[#0090B0] transition shadow">
+                    <i class="fa-solid fa-floppy-disk mr-1.5"></i> Guardar Presupuesto del Mes
+                </button>
+            </div>
+
+        </div>
+
+    </form>
+</div>
+
+<!-- Modal Comparativo Histórico -->
+<div id="comparisonModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-5">
+        <div class="flex justify-between items-center mb-3 pb-2 border-b">
+            <h3 class="text-base font-bold text-[#1B365D]">
+                <i class="fa-solid fa-chart-line text-[#00A8CC] mr-1.5"></i> Comparativo vs Mes Anterior
+            </h3>
+            <button type="button" onclick="closeComparisonModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-base"></i></button>
+        </div>
+        <div class="overflow-x-auto max-h-80">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="bg-gray-100 text-[10px] font-bold text-gray-600 uppercase border-b">
+                        <th class="p-2">Rubro</th>
+                        <th class="p-2 text-right">Mes Ant. ($)</th>
+                        <th class="p-2 text-right">Mes Act. ($)</th>
+                        <th class="p-2 text-right">Variación ($)</th>
+                        <th class="p-2 text-center">Var (%)</th>
+                    </tr>
+                </thead>
+                <tbody id="comparison-tbody">
+                    <!-- Se llena vía AJAX -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const initialData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Budget.Items));
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (initialData) {
+                for (const [key, value] of Object.entries(initialData)) {
+                    const input = document.querySelector(`[name="${key}"]`);
+                    if (input) input.value = value > 0 ? value : '';
+                }
+            }
+            calculateAll();
+        });
+
+        function strictNumeric(input) {
+            if (input.value < 0 || isNaN(input.value)) input.value = '';
+        }
+
+        function calculateAll() {
+            const getVal = (name) => parseFloat(document.querySelector(`[name="${name}"]`)?.value) || 0;
+
+            const grossIncome = getVal('incomeEsposa') + getVal('incomeEsposo') + getVal('incomeNegocios') + getVal('incomeOtros');
+            const giving = getVal('giving');
+            const taxes = getVal('taxes');
+            const netAvailable = grossIncome - giving - taxes;
+
+            let totalLiving = 0;
+            document.querySelectorAll('.expense-item').forEach(item => {
+                totalLiving += parseFloat(item.value) || 0;
+            });
+
+            const result = netAvailable - totalLiving;
+
+            const viviendaTotal = getVal('viviendaHipoteca') + getVal('viviendaSeguro') + getVal('viviendaImpuestos') + getVal('viviendaServicios') + getVal('viviendaTelecom') + getVal('viviendaMantenimiento');
+            const deudasTotal = getVal('deudasTarjetas') + getVal('deudasPrestamo') + getVal('deudasOtro');
+
+            document.getElementById('subtotal-income').textContent = `$${grossIncome.toFixed(2)}`;
+            document.getElementById('subtotal-vivienda').textContent = `$${viviendaTotal.toFixed(2)}`;
+            document.getElementById('subtotal-deudas').textContent = `$${deudasTotal.toFixed(2)}`;
+
+            document.getElementById('kpi-gross-income').textContent = `$${grossIncome.toFixed(2)}`;
+            document.getElementById('kpi-giving-tax').textContent = `$${(giving + taxes).toFixed(2)}`;
+            document.getElementById('kpi-net-income').textContent = `$${netAvailable.toFixed(2)}`;
+            document.getElementById('kpi-living-expenses').textContent = `$${totalLiving.toFixed(2)}`;
+
+            const kpiResult = document.getElementById('kpi-surplus-deficit');
+            kpiResult.textContent = `$${result.toFixed(2)}`;
+            kpiResult.className = result < 0 ? "text-lg font-black text-red-600 mt-1" : "text-lg font-black text-[#1B365D] mt-1";
+
+            document.getElementById('close-net-income').textContent = `$${netAvailable.toFixed(2)}`;
+            document.getElementById('close-expenses').textContent = `$${totalLiving.toFixed(2)}`;
+            document.getElementById('close-result').textContent = `$${result.toFixed(2)}`;
+        }
+
+        function changePeriod() {
+            const year = document.getElementById('budget-year').value;
+            const month = document.getElementById('budget-month').value;
+            window.location.href = `/Budget?year=${year}&month=${month}`;
+        }
+
+        async function saveBudget(e) {
+            e.preventDefault();
+            const getVal = (name) => parseFloat(document.querySelector(`[name="${name}"]`)?.value) || 0;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            const payload = {
+                year: parseInt(document.getElementById('budget-year').value),
+                month: parseInt(document.getElementById('budget-month').value),
+                incomeEsposa: getVal('incomeEsposa'),
+                incomeEsposo: getVal('incomeEsposo'),
+                incomeNegocios: getVal('incomeNegocios'),
+                incomeOtros: getVal('incomeOtros'),
+                giving: getVal('giving'),
+                taxes: getVal('taxes'),
+                viviendaHipoteca: getVal('viviendaHipoteca'),
+                viviendaSeguro: getVal('viviendaSeguro'),
+                viviendaImpuestos: getVal('viviendaImpuestos'),
+                viviendaServicios: getVal('viviendaServicios'),
+                viviendaTelecom: getVal('viviendaTelecom'),
+                viviendaMantenimiento: getVal('viviendaMantenimiento'),
+                comidaTotal: getVal('comidaTotal'),
+                transporteTotal: getVal('transporteTotal'),
+                segurosTotal: getVal('segurosTotal'),
+                deudasTarjetas: getVal('deudasTarjetas'),
+                deudasPrestamo: getVal('deudasPrestamo'),
+                deudasOtro: getVal('deudasOtro'),
+                entretenimientoTotal: getVal('entretenimientoTotal'),
+                ropaTotal: getVal('ropaTotal'),
+                ahorrosTotal: getVal('ahorrosTotal'),
+                medicosTotal: getVal('medicosTotal'),
+                miscelaneosTotal: getVal('miscelaneosTotal'),
+                inversionesTotal: getVal('inversionesTotal'),
+                escuelaTotal: getVal('escuelaTotal')
+            };
+
+            try {
+                const response = await fetch('/Budget/Save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const res = await response.json();
+                if (res.success) {
+                    showToast(res.message, 'success');
+                } else {
+                    showToast(res.message, 'error');
+                }
+            } catch (err) {
+                showToast('Error de conexión al guardar el presupuesto.', 'error');
+            }
+        }
+
+        async function openComparisonModal() {
+            const year = document.getElementById('budget-year').value;
+            const month = document.getElementById('budget-month').value;
+            const tbody = document.getElementById('comparison-tbody');
+            tbody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-gray-500">Cargando comparativo...</td></tr>';
+            document.getElementById('comparisonModal').classList.remove('hidden');
+
+            try {
+                const response = await fetch(`/Budget/GetComparison?year=${year}&month=${month}`);
+                const res = await response.json();
+
+                if (res.success && res.data) {
+                    tbody.innerHTML = res.data.map(item => `
+                        <tr class="border-b ${item.isAlert ? 'bg-red-50' : ''}">
+                            <td class="p-2 font-semibold text-gray-800">${item.categoryName}</td>
+                            <td class="p-2 text-right font-mono">$${item.previousMonthAmount.toFixed(2)}</td>
+                            <td class="p-2 text-right font-mono">$${item.currentMonthAmount.toFixed(2)}</td>
+                            <td class="p-2 text-right font-mono ${item.variationAmount > 0 ? 'text-red-600 font-bold' : 'text-green-600'}">
+                                $${item.variationAmount.toFixed(2)}
+                            </td>
+                            <td class="p-2 text-center font-bold ${item.isAlert ? 'text-red-600' : 'text-gray-700'}">
+                                ${item.variationPercentage}% ${item.isAlert ? '<i class="fa-solid fa-triangle-exclamation text-red-500 ml-0.5"></i>' : ''}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-red-500">Error al obtener el comparativo.</td></tr>';
+            }
+        }
+
+        function closeComparisonModal() {
+            document.getElementById('comparisonModal').classList.add('hidden');
+        }
+    </script>
+}

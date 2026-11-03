@@ -1,0 +1,227 @@
+﻿@model MayordomiaFinanciera.Web.Models.FinancialStatement.FinancialStatementViewModel
+@{
+    ViewData["Title"] = "Estado Financiero Personal";
+    Layout = "_Layout";
+}
+
+<div class="space-y-6">
+
+    <!-- Header de la Herramienta -->
+    <div class="bg-[#1B365D] text-white p-6 rounded-2xl shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <span class="text-xs font-bold uppercase text-[#00A8CC] tracking-widest block mb-1">Mayordomía Financiera</span>
+            <h1 class="text-2xl font-extrabold flex items-center">
+                <i class="fa-solid fa-scale-balanced text-[#00A8CC] mr-3"></i> Estado Financiero Personal
+            </h1>
+            <p class="text-gray-300 text-xs mt-1">Evalúa tu patrimonio real: Activos totales menos Pasivos totales (Compromisos) = Valor Neto.</p>
+        </div>
+        <div class="bg-white/10 px-4 py-2 rounded-xl text-right border border-white/20">
+            <span class="text-[10px] text-gray-300 uppercase block">Última Actualización</span>
+            <span class="text-xs font-mono font-bold text-[#00A8CC]">@Model.StatementDate.ToString("dd/MM/yyyy")</span>
+        </div>
+    </div>
+
+    <!-- KPIs Principales -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-emerald-200 bg-emerald-50/30">
+            <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider block">Total Activos (Lo que Posees)</span>
+            <div id="kpi-total-assets" class="text-2xl font-black text-emerald-600 mt-1">$0.00</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-red-200 bg-red-50/30">
+            <span class="text-xs font-bold text-red-800 uppercase tracking-wider block">Total Pasivos (Lo que Debes)</span>
+            <div id="kpi-total-liabilities" class="text-2xl font-black text-red-600 mt-1">$0.00</div>
+        </div>
+
+        <div class="bg-[#1B365D] text-white p-5 rounded-2xl shadow-md border border-cyan-500/30">
+            <span class="text-xs font-bold text-[#00A8CC] uppercase tracking-wider block">Valor Neto (Patrimonio Real)</span>
+            <div id="kpi-net-worth" class="text-2xl font-black text-white mt-1">$0.00</div>
+        </div>
+    </div>
+
+    <!-- Formulario Activos vs Pasivos -->
+    <form id="statement-form" onsubmit="saveStatement(event)" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        @Html.AntiForgeryToken()
+
+        <!-- Columna 1: ACTIVOS -->
+        <div class="space-y-6">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <h3 class="text-sm font-extrabold text-[#1B365D] border-b pb-2 mb-3 flex justify-between items-center">
+                    <span><i class="fa-solid fa-coins text-emerald-500 mr-2"></i> 1. Activos Líquidos</span>
+                </h3>
+                <div class="space-y-2.5 text-xs">
+                    <div class="flex justify-between items-center">
+                        <label class="text-gray-700">Efectivo en caja / Bancos</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="liquidCash" value="@Model.LiquidCash" class="w-32 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div class="flex justify-between items-center border-t pt-2">
+                        <label class="text-gray-700">Cuentas de Ahorro</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="liquidSavings" value="@Model.LiquidSavings" class="w-32 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div class="flex justify-between items-center border-t pt-2">
+                        <label class="text-gray-700">Otros fondos disponibles</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="liquidOther" value="@Model.LiquidOther" class="w-32 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <h3 class="text-sm font-extrabold text-[#1B365D] border-b pb-2 mb-3 flex justify-between items-center">
+                    <span><i class="fa-solid fa-house-user text-cyan-600 mr-2"></i> 2. Bienes Raíces</span>
+                </h3>
+                <div class="space-y-2.5 text-xs">
+                    <div class="flex justify-between items-center">
+                        <label class="text-gray-700">Residencia Principal</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="realEstatePrimaryHome" value="@Model.RealEstatePrimaryHome" class="w-32 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div class="flex justify-between items-center border-t pt-2">
+                        <label class="text-gray-700">Otras Propiedades / Terrenos</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="realEstateOther" value="@Model.RealEstateOther" class="w-32 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <h3 class="text-sm font-extrabold text-[#1B365D] border-b pb-2 mb-3 flex justify-between items-center">
+                    <span><i class="fa-solid fa-chart-line text-blue-500 mr-2"></i> 3. Inversiones y Muebles</span>
+                </h3>
+                <div class="space-y-2.5 text-xs">
+                    <div class="flex justify-between items-center">
+                        <label class="text-gray-700">Fondo de Jubilación / Pensiones</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="investmentsRetirement" value="@Model.InvestmentsRetirement" class="w-32 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div class="flex justify-between items-center border-t pt-2">
+                        <label class="text-gray-700">Acciones / Fondos / Cripto</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="investmentsStocks" value="@Model.InvestmentsStocks" class="w-32 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div class="flex justify-between items-center border-t pt-2">
+                        <label class="text-gray-700">Vehículos (Valor Comercial)</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="vehiclesValue" value="@Model.VehiclesValue" class="w-32 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div class="flex justify-between items-center border-t pt-2">
+                        <label class="text-gray-700">Artículos Personales / Muebles</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="personalPropertyValue" value="@Model.PersonalPropertyValue" class="w-32 px-2.5 py-1 border border-gray-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna 2: PASIVOS Y RESUMEN -->
+        <div class="space-y-6">
+            <div class="bg-red-50/50 p-5 rounded-2xl shadow-sm border border-red-200">
+                <h3 class="text-sm font-extrabold text-red-900 border-b border-red-200 pb-2 mb-3 flex justify-between items-center">
+                    <span><i class="fa-solid fa-credit-card text-red-600 mr-2"></i> Pasivos / Deudas Pendientes</span>
+                </h3>
+                <div class="space-y-2.5 text-xs">
+                    <div class="flex justify-between items-center">
+                        <label class="text-gray-800">Saldo Hipotecario</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="mortgageBalance" value="@Model.MortgageBalance" class="w-32 px-2.5 py-1 border border-red-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div class="flex justify-between items-center border-t border-red-100 pt-2">
+                        <label class="text-gray-800">Préstamo de Vehículo</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="carLoansBalance" value="@Model.CarLoansBalance" class="w-32 px-2.5 py-1 border border-red-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div class="flex justify-between items-center border-t border-red-100 pt-2">
+                        <label class="text-gray-800">Tarjetas de Crédito</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="creditCardsBalance" value="@Model.CreditCardsBalance" class="w-32 px-2.5 py-1 border border-red-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div class="flex justify-between items-center border-t border-red-100 pt-2">
+                        <label class="text-gray-800">Préstamos Personales</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="personalLoansBalance" value="@Model.PersonalLoansBalance" class="w-32 px-2.5 py-1 border border-red-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                    <div class="flex justify-between items-center border-t border-red-100 pt-2">
+                        <label class="text-gray-800">Otras Deudas</label>
+                        <input type="number" step="0.01" min="0" oninput="calculateAll();" name="otherDebtsBalance" value="@Model.OtherDebtsBalance" class="w-32 px-2.5 py-1 border border-red-300 rounded-lg text-right font-mono" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón Guardar -->
+            <div class="bg-[#1B365D] text-white p-5 rounded-2xl shadow-md space-y-3">
+                <h3 class="text-xs font-extrabold text-[#00A8CC] uppercase tracking-wider">Guardar Balance General</h3>
+                <p class="text-xs text-gray-300 leading-relaxed">
+                    Mantener tu estado financiero actualizado te ayuda a medir objetivamente el avance en la administración de tus bienes a lo largo del tiempo.
+                </p>
+                <button type="submit" class="w-full py-3 bg-[#00A8CC] text-white font-bold text-xs rounded-xl hover:bg-[#0090B0] transition shadow flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>Guardar Estado Financiero</span>
+                </button>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            calculateAll();
+        });
+
+        function getVal(name) {
+            return parseFloat(document.querySelector(`[name="${name}"]`)?.value) || 0;
+        }
+
+        function calculateAll() {
+            const assets = getVal('liquidCash') + getVal('liquidSavings') + getVal('liquidOther') +
+                           getVal('realEstatePrimaryHome') + getVal('realEstateOther') +
+                           getVal('investmentsRetirement') + getVal('investmentsStocks') +
+                           getVal('vehiclesValue') + getVal('personalPropertyValue');
+
+            const liabilities = getVal('mortgageBalance') + getVal('carLoansBalance') +
+                                getVal('creditCardsBalance') + getVal('personalLoansBalance') +
+                                getVal('otherDebtsBalance');
+
+            const netWorth = assets - liabilities;
+
+            document.getElementById('kpi-total-assets').textContent = `$${assets.toFixed(2)}`;
+            document.getElementById('kpi-total-liabilities').textContent = `$${liabilities.toFixed(2)}`;
+
+            const netWorthEl = document.getElementById('kpi-net-worth');
+            netWorthEl.textContent = `$${netWorth.toFixed(2)}`;
+            netWorthEl.className = netWorth >= 0 ? "text-2xl font-black text-emerald-400 mt-1" : "text-2xl font-black text-red-400 mt-1";
+        }
+
+        async function saveStatement(e) {
+            e.preventDefault();
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            const payload = {
+                liquidCash: getVal('liquidCash'),
+                liquidSavings: getVal('liquidSavings'),
+                liquidOther: getVal('liquidOther'),
+                realEstatePrimaryHome: getVal('realEstatePrimaryHome'),
+                realEstateOther: getVal('realEstateOther'),
+                investmentsRetirement: getVal('investmentsRetirement'),
+                investmentsStocks: getVal('investmentsStocks'),
+                vehiclesValue: getVal('vehiclesValue'),
+                personalPropertyValue: getVal('personalPropertyValue'),
+                mortgageBalance: getVal('mortgageBalance'),
+                carLoansBalance: getVal('carLoansBalance'),
+                creditCardsBalance: getVal('creditCardsBalance'),
+                personalLoansBalance: getVal('personalLoansBalance'),
+                otherDebtsBalance: getVal('otherDebtsBalance')
+            };
+
+            try {
+                const response = await fetch('/FinancialStatement/Save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const res = await response.json();
+                if (res.success) {
+                    showToast(res.message, 'success');
+                } else {
+                    showToast(res.message, 'error');
+                }
+            } catch (err) {
+                showToast('Error al conectar con el servidor para guardar.', 'error');
+            }
+        }
+    </script>
+}
