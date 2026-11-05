@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
+using System.Security.Claims;
 using System.Text;
 
 namespace MayordomiaFinanciera.Web.Controllers
@@ -19,9 +20,26 @@ namespace MayordomiaFinanciera.Web.Controllers
 
         public async Task<IActionResult> Index()
         {
-            DataTable dt = await _postgresRepository.ExecuteQueryAsync(
-                "SELECT * FROM posts ORDER BY created_at DESC",
-                null);
+            // Obtener el ChurchId de los claims de la sesión actual
+            string? churchIdClaim = User.FindFirst("ChurchId")?.Value ?? User.FindFirst("church_id")?.Value;
+            Guid churchId = Guid.Empty; // <-- Inicializar con Guid.Empty
+            bool hasChurch = !string.IsNullOrEmpty(churchIdClaim) && Guid.TryParse(churchIdClaim, out churchId);
+
+            string query;
+            NpgsqlParameter[]? parameters;
+
+            if (hasChurch)
+            {
+                query = "SELECT * FROM posts WHERE church_id = @ChurchId ORDER BY created_at DESC;";
+                parameters = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
+            }
+            else
+            {
+                query = "SELECT * FROM posts WHERE church_id IS NULL ORDER BY created_at DESC;";
+                parameters = null;
+            }
+
+            DataTable dt = await _postgresRepository.ExecuteQueryAsync(query, parameters);
             return View(dt);
         }
 
@@ -30,22 +48,38 @@ namespace MayordomiaFinanciera.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreatePost(string category, string content)
         {
-            // Extraer el ID real desde la cookie de sesión del usuario actual
-            string userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? Guid.Empty.ToString();
+            string userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? Guid.Empty.ToString();
             string userName = User.Identity?.Name ?? "Anónimo";
-
             Guid userId = Guid.Parse(userIdStr);
+
+            // 1. Intentar obtener el ChurchId de los claims de la sesión
+            string? churchIdClaim = User.FindFirst("ChurchId")?.Value ?? User.FindFirst("church_id")?.Value;
+            Guid? churchId = !string.IsNullOrEmpty(churchIdClaim) && Guid.TryParse(churchIdClaim, out Guid cId) ? cId : (Guid?)null;
+
+            // 2. RESPALDO DE SEGURIDAD: Si no está en el claim, buscarlo directamente en la tabla users
+            if (!churchId.HasValue || churchId.Value == Guid.Empty)
+            {
+                var userQuery = "SELECT church_id FROM users WHERE id = @UserId;";
+                var userParams = new NpgsqlParameter[] { new NpgsqlParameter("@UserId", userId) };
+                DataTable userDt = await _postgresRepository.ExecuteQueryAsync(userQuery, userParams);
+
+                if (userDt.Rows.Count > 0 && userDt.Rows[0]["church_id"] != DBNull.Value)
+                {
+                    churchId = Guid.Parse(userDt.Rows[0]["church_id"].ToString()!);
+                }
+            }
 
             var parameters = new NpgsqlParameter[]
             {
-                new NpgsqlParameter("@UserId", userId),
-                new NpgsqlParameter("@Name", userName),
-                new NpgsqlParameter("@Category", category),
-                new NpgsqlParameter("@Content", content)
+        new NpgsqlParameter("@UserId", userId),
+        new NpgsqlParameter("@Name", userName),
+        new NpgsqlParameter("@Category", category ?? "general"),
+        new NpgsqlParameter("@Content", content ?? ""),
+        new NpgsqlParameter("@ChurchId", churchId.HasValue ? (object)churchId.Value : DBNull.Value)
             };
 
-            string query = @"INSERT INTO posts (user_id, name, category, content, created_at) 
-                             VALUES (@UserId, @Name, @Category, @Content, NOW())";
+            string query = @"INSERT INTO posts (user_id, name, category, content, created_at, church_id) 
+                     VALUES (@UserId, @Name, @Category, @Content, NOW(), @ChurchId)";
 
             await _postgresRepository.ExecuteNonQueryAsync(query, parameters);
             return RedirectToAction("Index");
@@ -54,9 +88,25 @@ namespace MayordomiaFinanciera.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportCsv()
         {
-            DataTable dtPosts = await _postgresRepository.ExecuteQueryAsync(
-                "SELECT * FROM posts ORDER BY created_at DESC",
-                null);
+            string? churchIdClaim = User.FindFirst("ChurchId")?.Value ?? User.FindFirst("church_id")?.Value;
+            Guid churchId = Guid.Empty; // <-- Inicializar con Guid.Empty
+            bool hasChurch = !string.IsNullOrEmpty(churchIdClaim) && Guid.TryParse(churchIdClaim, out churchId);
+
+            string query;
+            NpgsqlParameter[]? parameters;
+
+            if (hasChurch)
+            {
+                query = "SELECT * FROM posts WHERE church_id = @ChurchId ORDER BY created_at DESC;";
+                parameters = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
+            }
+            else
+            {
+                query = "SELECT * FROM posts WHERE church_id IS NULL ORDER BY created_at DESC;";
+                parameters = null;
+            }
+
+            DataTable dtPosts = await _postgresRepository.ExecuteQueryAsync(query, parameters);
             var sb = new StringBuilder();
 
             sb.Append('\ufeff');

@@ -2,6 +2,7 @@
 using MayordomiaFinanciera.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
@@ -36,6 +37,14 @@ namespace MayordomiaFinanciera.Web.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
+        public IActionResult AccessDenied(string? returnUrl = null)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+            return View();
+        }
+
+        [HttpGet]
         public async Task<IActionResult> Login()
         {
             await LoadGroupsAsync();
@@ -55,13 +64,21 @@ namespace MayordomiaFinanciera.Web.Controllers
         {
             var parameters = new NpgsqlParameter[]
             {
-                new NpgsqlParameter("@Email", email),
-                new NpgsqlParameter("@PasswordHash", password)
+                new NpgsqlParameter("@Email", email ?? ""),
+                new NpgsqlParameter("@PasswordHash", password ?? "")
             };
 
-            DataTable result = await _postgresRepository.ExecuteQueryAsync(
-                "SELECT * FROM users WHERE email = @Email AND password_hash = @PasswordHash",
-                parameters);
+            // Consulta que obtiene al usuario y el estado de la iglesia asociada (si la tiene)
+            string loginQuery = @"
+                SELECT u.*, 
+                       c.subscription_status AS church_status, 
+                       c.name AS church_name
+                FROM users u
+                LEFT JOIN churches c ON u.church_id = c.id
+                WHERE LOWER(TRIM(u.email)) = LOWER(TRIM(@Email)) 
+                  AND u.password_hash = @PasswordHash;";
+
+            DataTable result = await _postgresRepository.ExecuteQueryAsync(loginQuery, parameters);
 
             if (result.Rows.Count > 0)
             {
@@ -69,14 +86,48 @@ namespace MayordomiaFinanciera.Web.Controllers
                 string userId = row["id"].ToString()!;
                 string userName = row["name"].ToString()!;
                 string userRole = row["role"].ToString()!;
+                string churchRole = row["church_role"] != DBNull.Value ? row["church_role"].ToString()! : "";
+                string churchStatus = row["church_status"] != DBNull.Value ? row["church_status"].ToString()! : "";
+                string churchId = row["church_id"] != DBNull.Value ? row["church_id"].ToString()! : "";
+
+                // VERIFICACIÓN ESTRICUTA DE ESTADO DE LA IGLESIA PARA PASTORES Y USUARIOS ECLESIALES
+                if (!string.IsNullOrEmpty(churchId) && (churchRole == "PASTOR" || userRole == "PASTOR"))
+                {
+                    if (churchStatus == "PENDING_VERIFICATION")
+                    {
+                        ModelState.AddModelError(string.Empty, "Tu iglesia se encuentra registrada pero su pago está PENDIENTE DE VERIFICACIÓN por el administrador. Podrás ingresar tan pronto el pago sea confirmado.");
+                        await LoadGroupsAsync();
+                        return View("Login");
+                    }
+                    else if (churchStatus == "INACTIVE")
+                    {
+                        ModelState.AddModelError(string.Empty, "La suscripción de tu iglesia se encuentra inactiva. Por favor contacta al soporte técnico.");
+                        await LoadGroupsAsync();
+                        return View("Login");
+                    }
+                }
 
                 var claims = new List<Claim>
+{
+    new Claim(ClaimTypes.NameIdentifier, userId),
+    new Claim(ClaimTypes.Name, userName),
+    new Claim(ClaimTypes.Email, email ?? ""),
+    
+    // 1. Normalizar el rol a minúsculas para evitar problemas con [Authorize(Roles = "...")]
+    new Claim(ClaimTypes.Role, userRole?.ToLower() ?? "student"),
+    new Claim("role", userRole?.ToLower() ?? "student"), // Copia extra por compatibilidad
+
+    // 2. ¡CRUCIAL! Añadir el ChurchId para que el sistema sepa a qué iglesia pertenece
+    new Claim("ChurchId", churchId?.ToString() ?? ""),
+    new Claim("church_id", churchId?.ToString() ?? "")
+};
+
+                if (!string.IsNullOrEmpty(churchId))
                 {
-                    new Claim(ClaimTypes.NameIdentifier, userId),
-                    new Claim(ClaimTypes.Name, userName),
-                    new Claim(ClaimTypes.Email, email),
-                    new Claim(ClaimTypes.Role, userRole)
-                };
+                    claims.Add(new Claim("ChurchId", churchId));
+                    claims.Add(new Claim("church_id", churchId));
+                    claims.Add(new Claim("ChurchRole", churchRole));
+                }
 
                 var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
@@ -128,13 +179,13 @@ namespace MayordomiaFinanciera.Web.Controllers
 
                 var parameters = new NpgsqlParameter[]
                 {
-            new NpgsqlParameter("@name", name ?? (object)DBNull.Value),
-            new NpgsqlParameter("@email", email ?? (object)DBNull.Value),
-            new NpgsqlParameter("@phone", phone ?? (object)DBNull.Value),
-            new NpgsqlParameter("@password", password ?? (object)DBNull.Value),
-            new NpgsqlParameter("@birthDate", birthDate),
-            new NpgsqlParameter("@country", country ?? (object)DBNull.Value),
-            new NpgsqlParameter("@groupId", parsedGroupId.HasValue ? parsedGroupId.Value : (object)DBNull.Value)
+                    new NpgsqlParameter("@name", name ?? (object)DBNull.Value),
+                    new NpgsqlParameter("@email", email ?? (object)DBNull.Value),
+                    new NpgsqlParameter("@phone", phone ?? (object)DBNull.Value),
+                    new NpgsqlParameter("@password", password ?? (object)DBNull.Value),
+                    new NpgsqlParameter("@birthDate", birthDate),
+                    new NpgsqlParameter("@country", country ?? (object)DBNull.Value),
+                    new NpgsqlParameter("@groupId", parsedGroupId.HasValue ? parsedGroupId.Value : (object)DBNull.Value)
                 };
 
                 await _postgresRepository.ExecuteNonQueryAsync(insertSql, parameters);
@@ -164,19 +215,20 @@ namespace MayordomiaFinanciera.Web.Controllers
                     );
                 }
                 catch (Exception emailEx)
-        {
+                {
                     System.Diagnostics.Debug.WriteLine($"Error al enviar correo de confirmación: {emailEx.Message}");
                 }
 
                 return RedirectToAction("Login", "Account");
-                }
-                catch (Exception ex)
-                {
-                    ModelState.AddModelError(string.Empty, $"Ocurrió un error al registrar: {ex.Message}");
-                    await LoadGroupsAsync();
-                    return View("Login");
-                }
             }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Ocurrió un error al registrar: {ex.Message}");
+                await LoadGroupsAsync();
+                return View("Login");
+            }
+        }
+
         #region GESTIÓN DE CONTRASEÑAS
 
         // 1. Cambio de contraseña por el propio usuario (desde la sesión activa)
@@ -218,8 +270,8 @@ namespace MayordomiaFinanciera.Web.Controllers
                 string updateSql = "UPDATE users SET password_hash = @newPassword WHERE id = @userId::uuid;";
                 var updateParams = new NpgsqlParameter[]
                 {
-            new NpgsqlParameter("@newPassword", newPassword),
-            new NpgsqlParameter("@userId", Guid.Parse(userId))
+                    new NpgsqlParameter("@newPassword", newPassword),
+                    new NpgsqlParameter("@userId", Guid.Parse(userId))
                 };
 
                 await _postgresRepository.ExecuteNonQueryAsync(updateSql, updateParams);
@@ -255,9 +307,9 @@ namespace MayordomiaFinanciera.Web.Controllers
                     return Json(new { success = true, message = "Si el correo existe en el sistema, recibirás una clave temporal." });
                 }
 
-                string userId = result.Rows[0]["id"].ToString();
-                string userName = result.Rows[0]["name"].ToString();
-                string userEmail = result.Rows[0]["email"].ToString();
+                string userId = result.Rows[0]["id"].ToString()!;
+                string userName = result.Rows[0]["name"].ToString()!;
+                string userEmail = result.Rows[0]["email"].ToString()!;
 
                 // Generar clave temporal alfanumérica de 8 caracteres
                 string tempPassword = Guid.NewGuid().ToString().Substring(0, 8);
@@ -266,8 +318,8 @@ namespace MayordomiaFinanciera.Web.Controllers
                 string updateSql = "UPDATE users SET password_hash = @tempPass WHERE id = @userId::uuid;";
                 var updateParams = new NpgsqlParameter[]
                 {
-                new NpgsqlParameter("@tempPass", tempPassword),
-                new NpgsqlParameter("@userId", Guid.Parse(userId))
+                    new NpgsqlParameter("@tempPass", tempPassword),
+                    new NpgsqlParameter("@userId", Guid.Parse(userId))
                 };
                 await _postgresRepository.ExecuteNonQueryAsync(updateSql, updateParams);
 
@@ -300,7 +352,6 @@ namespace MayordomiaFinanciera.Web.Controllers
         }
 
         // 3. Reseteo directo de contraseña por parte del Administrador (Exclusivo para rol 'admin')
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AdminResetUserPassword(string targetUserId, string newPassword)
@@ -322,8 +373,8 @@ namespace MayordomiaFinanciera.Web.Controllers
                 string updateSql = "UPDATE users SET password_hash = @newPassword WHERE id = @targetUserId::uuid;";
                 var updateParams = new NpgsqlParameter[]
                 {
-            new NpgsqlParameter("@newPassword", newPassword),
-            new NpgsqlParameter("@targetUserId", Guid.Parse(targetUserId))
+                    new NpgsqlParameter("@newPassword", newPassword),
+                    new NpgsqlParameter("@targetUserId", Guid.Parse(targetUserId))
                 };
 
                 await _postgresRepository.ExecuteNonQueryAsync(updateSql, updateParams);
@@ -335,6 +386,8 @@ namespace MayordomiaFinanciera.Web.Controllers
                 return Json(new { success = false, message = $"Error al restablecer la contraseña: {ex.Message}" });
             }
         }
+
+        
 
         #endregion
     }

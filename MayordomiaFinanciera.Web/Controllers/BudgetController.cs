@@ -12,10 +12,12 @@ namespace MayordomiaFinanciera.Web.Controllers
     public class BudgetController : Controller
     {
         private readonly IBudgetRepository _budgetRepository;
+        private readonly ISubscriptionPolicyService _subscriptionPolicy;
 
-        public BudgetController(IBudgetRepository budgetRepository)
+        public BudgetController(IBudgetRepository budgetRepository, ISubscriptionPolicyService subscriptionPolicy)
         {
             _budgetRepository = budgetRepository;
+            _subscriptionPolicy = subscriptionPolicy;
         }
 
         private Guid GetCurrentUserId()
@@ -34,6 +36,10 @@ namespace MayordomiaFinanciera.Web.Controllers
             Guid userId = GetCurrentUserId();
             int selectedYear = year ?? DateTime.Now.Year;
             int selectedMonth = month ?? DateTime.Now.Month;
+
+            // Verificar si el usuario tiene acceso a funciones avanzadas (B2B o pago)
+            bool isAdvancedAllowed = await _subscriptionPolicy.CanAccessAdvancedFeaturesAsync(userId);
+            ViewData["IsAdvancedAllowed"] = isAdvancedAllowed;
 
             var viewModel = new BudgetViewModels
             {
@@ -67,6 +73,19 @@ namespace MayordomiaFinanciera.Web.Controllers
         public async Task<IActionResult> GetComparison(int year, int month)
         {
             Guid userId = GetCurrentUserId();
+
+            // Validar límites del Plan Gratuito B2C
+            bool isAllowed = await _subscriptionPolicy.CanAccessAdvancedFeaturesAsync(userId);
+            if (!isAllowed)
+            {
+                return Json(new
+                {
+                    success = false,
+                    isRestricted = true,
+                    message = "El comparativo histórico avanzado requiere pertenecer a una iglesia con suscripción activa."
+                });
+            }
+
             var comparison = await _budgetRepository.GetMonthlyComparisonAsync(userId, year, month);
             return Json(new { success = true, data = comparison });
         }
