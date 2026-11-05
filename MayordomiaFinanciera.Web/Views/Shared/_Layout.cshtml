@@ -27,7 +27,7 @@
         }
     </style>
 </head>
-<body class="h-full bg-gray-50 text-gray-800 flex overflow-x-hidden" x-data="{ mobileOpen: false, desktopOpen: true, toolsOpen: false, ministryOpen: false }">
+<body class="h-full bg-gray-50 text-gray-800 flex flex-col md:flex-row overflow-x-hidden" x-data="{ mobileOpen: false, desktopOpen: true, toolsOpen: false, ministryOpen: false }">
 
     <!-- Notificaciones Toast -->
     <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col space-y-2"></div>
@@ -42,12 +42,13 @@
 
     <!-- 2. SIDEBAR LATERAL -->
     <aside :class="{
-                '-translate-x-full md:translate-x-0': !mobileOpen,
-                'translate-x-0 fixed inset-y-0 left-0 z-50 w-64': mobileOpen,
+                'translate-x-0': mobileOpen,
+                '-translate-x-full': !mobileOpen,
+                'md:translate-x-0': true,
                 'md:w-56': desktopOpen,
                 'md:w-16': !desktopOpen
             }"
-           class="bg-[#1B365D] text-white h-screen fixed md:sticky top-0 z-40 transition-all duration-300 flex flex-col justify-between shadow-xl shrink-0 overflow-y-auto no-scrollbar border-r border-white/10 -translate-x-full md:translate-x-0">
+           class="bg-[#1B365D] text-white fixed md:sticky top-0 inset-y-0 left-0 z-50 w-64 transition-transform duration-300 ease-in-out flex flex-col justify-between shadow-xl shrink-0 overflow-y-auto no-scrollbar border-r border-white/10 h-full min-h-screen">
 
         <div class="flex flex-col">
             <!-- Logo / Header del Sidebar -->
