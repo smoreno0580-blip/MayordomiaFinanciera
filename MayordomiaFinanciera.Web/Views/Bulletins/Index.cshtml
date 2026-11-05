@@ -1,0 +1,90 @@
+﻿@model System.Data.DataTable
+@{
+    ViewData["Title"] = "Boletines y Avisos Ministeriales";
+    Layout = "_Layout";
+
+    // Validación directa de roles de administración y liderazgo ministerial
+    bool isPastorOrAdmin = User.IsInRole("admin") || User.IsInRole("ADMIN") ||
+                         User.IsInRole("pastor") || User.IsInRole("PASTOR") ||
+                         User.IsInRole("copastor") || User.IsInRole("COPASTOR") ||
+                         User.IsInRole("lider") || User.IsInRole("LIDER") ||
+                         User.IsInRole("teacher") || User.IsInRole("TEACHER");
+}
+
+<div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b pb-4">
+        <div>
+            <h1 class="text-2xl font-black text-[#1B365D]">Boletines y Avisos</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Mantente informado con los anuncios oficiales y la agenda semanal de la congregación.</p>
+        </div>
+        @if (isPastorOrAdmin)
+        {
+            <a href="@Url.Action("Upsert", "Bulletins")" class="px-5 py-2.5 bg-[#00A8CC] hover:bg-[#008fa8] text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-2">
+                <i class="fa-solid fa-bullhorn"></i>
+                <span>Publicar Nuevo Aviso</span>
+            </a>
+        }
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 text-xs text-emerald-800 rounded-r-xl shadow-sm">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <div class="space-y-4">
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="bg-gray-50 p-8 rounded-2xl text-center border border-gray-200 space-y-3">
+                <div class="w-12 h-12 mx-auto rounded-full bg-blue-50 flex items-center justify-center text-blue-500 text-xl font-bold">
+                    <i class="fa-solid fa-newspaper"></i>
+                </div>
+                <h3 class="text-sm font-bold text-gray-700">No hay boletines publicados</h3>
+                <p class="text-xs text-gray-500">Los avisos importantes de la iglesia aparecerán aquí.</p>
+
+                @if (isPastorOrAdmin)
+                {
+                    <div class="pt-2">
+                        <a href="@Url.Action("Upsert", "Bulletins")" class="inline-flex items-center space-x-2 px-4 py-2 bg-[#1B365D] text-white font-bold text-xs rounded-xl hover:bg-[#00A8CC] transition shadow">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Publicar el primer aviso</span>
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            @foreach (System.Data.DataRow row in Model.Rows)
+            {
+                // CORREGIDO: Usar is_active en lugar de is_published
+                bool isPublished = row["is_active"] != DBNull.Value && Convert.ToBoolean(row["is_active"]);
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-3 hover:shadow-md transition">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-[#00A8CC] bg-blue-50 px-2.5 py-1 rounded-lg">
+                            <i class="fa-solid fa-calendar-day mr-1"></i> @(row["publish_date"] != DBNull.Value ? Convert.ToDateTime(row["publish_date"]).ToString("dd/MM/yyyy") : "Reciente")
+                        </span>
+                        @if (isPastorOrAdmin)
+                        {
+                            <div class="flex items-center space-x-3">
+                                <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded @(isPublished ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500")">
+                                    @(isPublished ? "Activo" : "Oculto")
+                                </span>
+                                <a href="@Url.Action("Upsert", "Bulletins", new { id = row["id"] })" class="text-gray-400 hover:text-[#00A8CC] text-xs font-bold">
+                                    <i class="fa-solid fa-pen-to-square"></i> Editar
+                                </a>
+                            </div>
+                        }
+                    </div>
+
+                    <h2 class="text-base font-bold text-[#1B365D]">@row["title"]</h2>
+                    <div class="text-xs text-gray-600 whitespace-pre-line leading-relaxed border-t border-gray-50 pt-3">
+                        @row["content"]
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

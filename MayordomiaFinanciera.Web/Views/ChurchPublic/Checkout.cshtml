@@ -1,0 +1,174 @@
+﻿@model MayordomiaFinanciera.Web.Models.Church.RegisterChurchViewModel
+@{
+    ViewData["Title"] = "Pago y Registro de Iglesia - Mayordomía SaaS";
+    Layout = "_Layout";
+    var globalSettings = ViewBag.GlobalPaymentSettings as MayordomiaFinanciera.Web.Models.Church.GlobalPaymentSettingsDto
+                         ?? new MayordomiaFinanciera.Web.Models.Church.GlobalPaymentSettingsDto();
+}
+
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<!-- SDK de PayPal leyendo dinámicamente el Client ID guardado en BD -->
+<script src="https://www.paypal.com/sdk/js?client-id=@(globalSettings.SaasPaypalClientId)&currency=USD"></script>
+
+<div class="max-w-4xl mx-auto space-y-8 py-6" x-data="{ activeTab: 'PAYPAL' }">
+
+    <div class="text-center space-y-2">
+        <span class="text-xs font-extrabold uppercase text-[#00A8CC] tracking-widest">Plataforma Ministerial SaaS</span>
+        <h1 class="text-3xl font-black text-[#1B365D]">Pagar y Activar Suscripción</h1>
+        <p class="text-sm text-gray-600 max-w-lg mx-auto">
+            Selecciona tu método de pago preferido para confirmar la suscripción de tu congregación.
+        </p>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl text-red-700 text-xs space-y-1">
+            <div class="font-bold flex items-center">
+                <i class="fa-solid fa-triangle-exclamation mr-2"></i> No se pudo procesar la transacción:
+            </div>
+            @Html.ValidationSummary(false, "", new { @class = "list-disc pl-5" })
+        </div>
+    }
+
+    <form id="checkoutForm" asp-controller="ChurchPublic" asp-action="ProcessSubscription" method="post" class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg border border-gray-200 space-y-8">
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" name="paymentMethod" :value="activeTab" />
+        <input type="hidden" id="paypalOrderId" name="paypalOrderId" value="" />
+
+        <!-- 1. Datos de la Iglesia y del Pastor -->
+        <div class="space-y-4">
+            <h2 class="text-sm font-bold text-[#1B365D] uppercase border-b border-gray-100 pb-2 flex items-center">
+                <i class="fa-solid fa-church text-[#00A8CC] mr-2"></i> 1. Datos de la Iglesia y del Pastor
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Nombre de la Iglesia / Ministerio</label>
+                    <input type="text" asp-for="Name" required placeholder="Ej: Comunidad Cristiana Vida" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Slug / Identificador Corto</label>
+                    <input type="text" asp-for="Slug" required placeholder="iglesiavidanueva" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Correo Electrónico (Pastor / Admin)</label>
+                    <input type="email" asp-for="AdminEmail" required placeholder="pastor@iglesia.org" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Contraseña de Acceso</label>
+                    <input type="password" asp-for="AdminPassword" required placeholder="••••••••" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Plan Seleccionado -->
+        <div class="space-y-3">
+            <h2 class="text-sm font-bold text-[#1B365D] uppercase border-b border-gray-100 pb-2 flex items-center">
+                <i class="fa-solid fa-tags text-[#00A8CC] mr-2"></i> 2. Plan Seleccionado
+            </h2>
+            <select id="subscriptionPlan" asp-for="SubscriptionPlan" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm font-bold text-[#1B365D] bg-gray-50 focus:ring-2 focus:ring-[#00A8CC]">
+                <option value="SEED">Plan Semilla — $25/mes (Hasta 50 miembros)</option>
+                <option value="MINISTERIAL">Plan Ministerial — $50/mes (Hasta 200 miembros)</option>
+                <option value="CATHEDRAL">Plan Catedral — $100/mes (Hasta 1,000 miembros)</option>
+            </select>
+        </div>
+
+        <!-- 3. Métodos de Pago Habilitados (Tabs UI) -->
+        <div class="space-y-4">
+            <h2 class="text-sm font-bold text-[#1B365D] uppercase border-b border-gray-100 pb-2 flex items-center">
+                <i class="fa-solid fa-credit-card text-emerald-600 mr-2"></i> 3. Métodos de Pago
+            </h2>
+
+            <!-- 3 Pestañas activas (Tarjeta excluida temporalmente) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2 p-1 bg-gray-100 rounded-xl text-xs font-bold">
+                <button type="button"
+                        x-on:click="activeTab = 'PAYPAL'"
+                        :class="activeTab === 'PAYPAL' ? 'bg-white text-[#1B365D] shadow-sm' : 'text-gray-500'"
+                        class="py-2.5 rounded-lg transition text-center flex items-center justify-center">
+                    <i class="fa-brands fa-paypal text-blue-600 mr-1.5"></i> PayPal
+                </button>
+
+                <button type="button"
+                        x-on:click="activeTab = 'ACH_TRANSFER'"
+                        :class="activeTab === 'ACH_TRANSFER' ? 'bg-white text-[#1B365D] shadow-sm' : 'text-gray-500'"
+                        class="py-2.5 rounded-lg transition text-center flex items-center justify-center">
+                    <i class="fa-solid fa-building-columns text-[#1B365D] mr-1.5"></i> ACH Bancario
+                </button>
+
+                <button type="button"
+                        x-on:click="activeTab = 'YAPPY'"
+                        :class="activeTab === 'YAPPY' ? 'bg-white text-[#1B365D] shadow-sm' : 'text-gray-500'"
+                        class="py-2.5 rounded-lg transition text-center flex items-center justify-center">
+                    <i class="fa-solid fa-mobile-screen-button text-sky-500 mr-1.5"></i> Yappy
+                </button>
+            </div>
+
+            <!-- TAB 1: PayPal -->
+            <div x-show="activeTab === 'PAYPAL'" class="bg-gray-50 p-5 rounded-2xl border border-gray-200 text-center space-y-4">
+                <p class="text-xs text-gray-600">Haz clic en el botón de PayPal para autorizar el cobro seguro de tu suscripción (@globalSettings.SaasPaypalEmail):</p>
+                <div id="paypal-button-container" class="max-w-xs mx-auto"></div>
+            </div>
+
+            <!-- TAB 2: ACH Transferencia Dinámica desde BD -->
+            <div x-show="activeTab === 'ACH_TRANSFER'" class="bg-gray-50 p-5 rounded-2xl border border-gray-200 space-y-4" style="display: none;">
+                <div class="bg-white p-4 rounded-xl border border-gray-200 font-mono text-xs space-y-1.5 text-gray-700">
+                    <div><strong>Banco:</strong> @globalSettings.SaasAchBankName</div>
+                    <div><strong>Tipo de Cuenta:</strong> @globalSettings.SaasAchAccountType</div>
+                    <div><strong>Número de Cuenta:</strong> @globalSettings.SaasAchAccountNumber</div>
+                    <div><strong>Beneficiario:</strong> @globalSettings.SaasAchAccountHolder</div>
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase text-[10px] mb-1">Número de Confirmación / Referencia ACH (*Requerido - Sujeto a Verificación)</label>
+                    <input type="text" name="manualReference" placeholder="Ej: ACH-8849201" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-mono uppercase">
+                </div>
+                <div class="text-[11px] text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200 flex items-center">
+                    <i class="fa-solid fa-clock mr-2 text-sm"></i>
+                    <span>Los registros por ACH quedan en estado <strong>Pendiente de Verificación</strong> hasta la aprobación del administrador.</span>
+                </div>
+            </div>
+
+            <!-- TAB 3: Yappy Dinámico desde BD -->
+            <div x-show="activeTab === 'YAPPY'" class="bg-gray-50 p-5 rounded-2xl border border-gray-200 space-y-4" style="display: none;">
+                <p class="text-xs text-gray-600">Busca a <strong>@globalSettings.SaasYappyAlias</strong> en Yappy Comercial y realiza la transferencia correspondiente a tu plan.</p>
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase text-[10px] mb-1">Número de Transacción Yappy (*Requerido - Sujeto a Verificación)</label>
+                    <input type="text" name="manualReference" placeholder="Ej: YAP-991823" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-mono uppercase">
+                </div>
+                <div class="text-[11px] text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200 flex items-center">
+                    <i class="fa-solid fa-clock mr-2 text-sm"></i>
+                    <span>Los registros por Yappy quedan en estado <strong>Pendiente de Verificación</strong> hasta la aprobación del administrador.</span>
+                </div>
+            </div>
+        </div>
+
+        <button id="submitBtn" type="submit" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-xl shadow-lg transition flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-lock text-xs"></i>
+            <span>Procesar Pago y Registrar Iglesia</span>
+        </button>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof paypal !== 'undefined') {
+            paypal.Buttons({
+                createOrder: function(data, actions) {
+                    var plan = document.getElementById('subscriptionPlan').value;
+                    var amount = plan === 'CATHEDRAL' ? '199.00' : (plan === 'MINISTERIAL' ? '79.00' : '29.00');
+                    return actions.order.create({
+                        purchase_units: [{
+                            amount: { value: amount }
+                        }]
+                    });
+                },
+                onApprove: function(data, actions) {
+                    return actions.order.capture().then(function(details) {
+                        document.getElementById('paypalOrderId').value = details.id;
+                        document.getElementById('checkoutForm').submit();
+                    });
+                }
+            }).render('#paypal-button-container');
+        }
+    });
+</script>

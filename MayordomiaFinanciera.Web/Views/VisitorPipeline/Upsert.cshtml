@@ -1,0 +1,76 @@
+﻿@model MayordomiaFinanciera.Web.Models.Church.VisitorPipelineDto
+@{
+    ViewData["Title"] = Model.Id == Guid.Empty ? "Nuevo Visitante" : "Editar Registro de Visitante";
+    Layout = "_Layout";
+}
+
+<div class="max-w-2xl mx-auto px-4 py-8 space-y-6">
+    <div class="border-b pb-4">
+        <a href="@Url.Action("Index", "VisitorPipeline")" class="text-xs font-bold text-[#00A8CC] hover:underline mb-1 inline-block">
+            <i class="fa-solid fa-arrow-left mr-1"></i> Volver a la Ruta de Crecimiento
+        </a>
+        <h1 class="text-2xl font-black text-[#1B365D]">
+            @(Model.Id == Guid.Empty ? "Registrar Nuevo Visitante" : "Actualizar Datos del Visitante")
+        </h1>
+        <p class="text-xs text-gray-500">Ingresa la información clave para asignarle un mentor y darle seguimiento pastoral.</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <form asp-action="Upsert" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="ChurchId" />
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre Completo *</label>
+                <input asp-for="FullName" type="text" class="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-[#00A8CC] focus:outline-none" placeholder="Ej. Carlos Martínez" required />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Teléfono / WhatsApp</label>
+                    <input asp-for="Phone" type="text" class="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-[#00A8CC] focus:outline-none" placeholder="Ej. +507 6000-0000" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Correo Electrónico</label>
+                    <input asp-for="Email" type="email" class="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-[#00A8CC] focus:outline-none" placeholder="carlos@correo.com" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Etapa de Crecimiento</label>
+                    <select asp-for="Stage" class="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-[#00A8CC] focus:outline-none font-bold text-[#1B365D]">
+                        <option value="Bienvenida">1. Bienvenida (Nuevo)</option>
+                        <option value="Crecimiento">2. Crecimiento (Estudiando / Discipulado)</option>
+                        <option value="Consolidado">3. Consolidado (Bautizado / Integrado)</option>
+                        <option value="Servidor">4. Servidor Activo (Sirviendo en equipo)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fecha de Visita</label>
+                    <input asp-for="VisitDate" type="date" class="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-[#00A8CC] focus:outline-none" />
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Líder / Mentor Asignado</label>
+                <input asp-for="AssignedTo" type="text" class="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-[#00A8CC] focus:outline-none" placeholder="Ej. Pedro Gómez" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Notas de Cuidado Pastoral</label>
+                <textarea asp-for="Notes" rows="3" class="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-[#00A8CC] focus:outline-none" placeholder="Peticiones, situación familiar o notas de seguimiento..."></textarea>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end space-x-3">
+                <a href="@Url.Action("Index", "VisitorPipeline")" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-6 py-2.5 bg-[#00A8CC] hover:bg-[#008fa8] text-white font-bold text-xs rounded-xl shadow transition">
+                    Guardar Registro
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

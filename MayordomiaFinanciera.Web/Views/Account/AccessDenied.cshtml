@@ -1,0 +1,24 @@
+﻿@{
+    ViewData["Title"] = "Acceso Restringido";
+    Layout = "_Layout";
+}
+
+<div class="max-w-md mx-auto mt-16 text-center space-y-6 p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
+    <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">
+        <i class="fa-solid fa-ban"></i>
+    </div>
+
+    <div class="space-y-2">
+        <h1 class="text-2xl font-black text-[#1B365D]">Acceso Restringido</h1>
+        <p class="text-xs text-gray-500 leading-relaxed">
+            Lo sentimos, tu cuenta no cuenta con los permisos necesarios o el rol asignado para visualizar esta sección ministerial.
+        </p>
+    </div>
+
+    <div class="pt-4">
+        <a href="~/Dashboard" class="inline-flex items-center justify-center w-full py-3 bg-[#00A8CC] hover:bg-[#008fa8] text-white font-bold text-xs rounded-xl shadow transition space-x-2">
+            <i class="fa-solid fa-house text-sm"></i>
+            <span>Volver al Panel Principal</span>
+        </a>
+    </div>
+</div>

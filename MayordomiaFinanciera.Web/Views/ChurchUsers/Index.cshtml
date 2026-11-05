@@ -1,0 +1,138 @@
+﻿@model System.Data.DataTable
+@{
+    ViewData["Title"] = "Gestión de Equipo y Miembros";
+    Layout = "_Layout";
+
+    // Evaluar si puede gestionar roles basándose en la validación por church_role entregada por el controlador (o Claims)
+    bool isSystemAdminOrPastor = User.IsInRole("admin") || User.IsInRole("ADMIN") ||
+                                 User.IsInRole("pastor") || User.IsInRole("PASTOR") ||
+                                 User.IsInRole("copastor") || User.IsInRole("COPASTOR");
+
+    bool canManageRoles = (ViewBag.CanManageRoles != null && (bool)ViewBag.CanManageRoles) || isSystemAdminOrPastor;
+}
+
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b pb-4">
+        <div>
+            <h1 class="text-2xl font-black text-[#1B365D]">Equipo Pastoral y Miembros</h1>
+            <p class="text-xs text-gray-500 mt-0.5">
+                Administra los roles ministeriales (Co-pastores, Líderes y Miembros) de las personas vinculadas a tu congregación.
+            </p>
+        </div>
+        @if (canManageRoles)
+        {
+            <a href="@Url.Action("ExportCsv", "ChurchUsers")" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-2 shrink-0">
+                <i class="fa-solid fa-file-csv text-sm"></i>
+                <span>Exportar CSV Miembros</span>
+            </a>
+        }
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 text-xs text-emerald-800 rounded-r-xl shadow-sm">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 text-xs text-red-800 rounded-r-xl shadow-sm">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-700 uppercase border-b border-gray-100">
+                        <th class="p-4">Usuario / Nombre</th>
+                        <th class="p-4">Correo</th>
+                        <th class="p-4">Rol Actual</th>
+                        @if (canManageRoles)
+                        {
+                            <th class="p-4 text-right">Asignar Nuevo Rol</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @if (Model.Rows.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="@(canManageRoles ? 4 : 3)" class="p-6 text-center text-gray-400">No hay miembros vinculados a la iglesia aún.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (System.Data.DataRow row in Model.Rows)
+                        {
+                            // Leer columna church_role con fallback a role o MEMBER
+                            string rawRole = row.Table.Columns.Contains("church_role") && row["church_role"] != DBNull.Value
+                            ? row["church_role"].ToString()!
+                            : (row.Table.Columns.Contains("role") && row["role"] != DBNull.Value ? row["role"].ToString()! : "MEMBER");
+
+                            string currentRole = rawRole.Trim().ToUpper();
+
+                            <tr class="hover:bg-gray-50/50 transition">
+                                <td class="p-4 font-bold text-[#1B365D]">
+                                    @(row.Table.Columns.Contains("display_name") && row["display_name"] != DBNull.Value && !string.IsNullOrEmpty(row["display_name"]?.ToString())
+                                                                ? row["display_name"]
+                                                                : (row.Table.Columns.Contains("full_name") && row["full_name"] != DBNull.Value && !string.IsNullOrEmpty(row["full_name"]?.ToString())
+                                                                ? row["full_name"]
+                                                                : (row.Table.Columns.Contains("name") && row["name"] != DBNull.Value && !string.IsNullOrEmpty(row["name"]?.ToString())
+                                                                ? row["name"]
+                                                                : row["email"])))
+                        </td>
+                        <td class="p-4 text-gray-600 font-mono">
+                            @row["email"]
+                        </td>
+                        <td class="p-4">
+                            @if (currentRole == "PASTOR" || currentRole == "ADMIN")
+                                    {
+                                        <span class="px-2.5 py-1 bg-blue-100 text-blue-800 font-bold rounded-lg uppercase text-[10px]">Pastor Principal / Admin</span>
+                                    }
+                                    else if (currentRole == "COPASTOR")
+                                    {
+                                        <span class="px-2.5 py-1 bg-indigo-100 text-indigo-800 font-bold rounded-lg uppercase text-[10px]">Co-Pastor</span>
+                                    }
+                                    else if (currentRole == "LIDER" || currentRole == "LEADER")
+                                    {
+                                        <span class="px-2.5 py-1 bg-amber-100 text-amber-800 font-bold rounded-lg uppercase text-[10px]">Líder de Célula</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="px-2.5 py-1 bg-gray-100 text-gray-700 font-semibold rounded-lg uppercase text-[10px]">Miembro</span>
+                                    }
+                                </td>
+                                @if (canManageRoles)
+                                {
+                                    <td class="p-4 text-right">
+                                        @if (currentRole != "PASTOR" && currentRole != "ADMIN")
+                                        {
+                                            <form asp-action="UpdateRole" method="post" class="inline-flex items-center space-x-2">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="userId" value="@row["id"]" />
+                                                <select name="newRole" class="px-2.5 py-1 text-xs border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-[#00A8CC] focus:outline-none">
+                                                    <option value="COPASTOR" selected="@(currentRole == "COPASTOR")">Co-Pastor</option>
+                                                    <option value="LIDER" selected="@(currentRole == "LIDER" || currentRole == "LEADER")">Líder</option>
+                                                    <option value="MEMBER" selected="@(currentRole == "MEMBER" || currentRole == "MIEMBRO")">Miembro</option>
+                                                </select>
+                                                <button type="submit" class="px-3 py-1 bg-[#1B365D] hover:bg-[#00A8CC] text-white font-bold text-xs rounded-lg transition shadow-sm">
+                                                    Cambiar
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-gray-400 italic text-[11px]">Principal</span>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

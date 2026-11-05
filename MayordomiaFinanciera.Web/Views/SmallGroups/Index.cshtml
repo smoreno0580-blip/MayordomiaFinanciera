@@ -1,0 +1,99 @@
+﻿@model System.Data.DataTable
+@{
+    ViewData["Title"] = "Gestión de Grupos Pequeños";
+    Layout = "_Layout";
+
+    // Permitir creación y edición a Pastores, Co-pastores, Líderes y Administradores
+    bool isPastorOrAdmin = User.IsInRole("admin") || User.IsInRole("ADMIN") ||
+                         User.IsInRole("pastor") || User.IsInRole("PASTOR") ||
+                         User.IsInRole("copastor") || User.IsInRole("COPASTOR") ||
+                         User.IsInRole("lider") || User.IsInRole("LIDER") ||
+                         User.IsInRole("teacher") || User.IsInRole("TEACHER");
+}
+
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b pb-4">
+        <div>
+            <h1 class="text-2xl font-black text-[#1B365D]">Grupos Pequeños (Células)</h1>
+            <p class="text-xs text-gray-500 mt-0.5">
+                Administra las células de tu congregación, supervisa la asistencia semanal y mantén conectadas a las familias.
+            </p>
+        </div>
+        @if (isPastorOrAdmin)
+        {
+            <a href="@Url.Action("Upsert", "SmallGroups")" class="px-5 py-2.5 bg-[#00A8CC] hover:bg-[#008fa8] text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-2">
+                <i class="fa-solid fa-plus"></i>
+                <span>Crear Nuevo Grupo</span>
+            </a>
+            <a href="@Url.Action("ExportCsv", "SmallGroups")" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-2">
+                <i class="fa-solid fa-file-csv text-sm"></i>
+                <span>Exportar CSV Células</span>
+            </a>
+        }
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 text-xs text-emerald-800 rounded-r-xl shadow-sm">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="col-span-full bg-gray-50 p-8 rounded-2xl text-center border border-gray-200">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 text-xl font-bold">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <h3 class="text-sm font-bold text-gray-700">No hay grupos registrados</h3>
+                <p class="text-xs text-gray-500 mt-1">Comienza creando el primer grupo pequeño de la congregación.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (System.Data.DataRow row in Model.Rows)
+            {
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between space-y-4 hover:shadow-md transition">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-1 bg-amber-50 text-amber-700 font-bold text-[10px] rounded-lg uppercase tracking-wider">
+                                Célula Activa
+                            </span>
+                            @if (isPastorOrAdmin)
+                            {
+                                <a href="@Url.Action("Upsert", "SmallGroups", new { id = row["id"] })" class="text-gray-400 hover:text-[#00A8CC] text-xs font-bold">
+                                    <i class="fa-solid fa-pen-to-square"></i> Editar
+                                </a>
+                            }
+                        </div>
+                        <h2 class="text-base font-bold text-[#1B365D]">@row["name"]</h2>
+                        <p class="text-xs text-gray-600 line-clamp-2">@(row["description"] != DBNull.Value ? row["description"] : "Sin descripción detallada.")</p>
+                    </div>
+
+                    <div class="space-y-1.5 text-xs text-gray-500 pt-3 border-t border-gray-100">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-calendar-days text-[#00A8CC] w-4"></i>
+                            <span>Reúne: <strong>@(row["meeting_day"] != DBNull.Value ? row["meeting_day"] : "Por definir")</strong></span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-location-dot text-amber-500 w-4"></i>
+                            <span class="truncate">Ubicación: <strong>@(row["location"] != DBNull.Value ? row["location"] : "Virtual / Por definir")</strong></span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-user-tie text-blue-600 w-4"></i>
+                            <span>Líder: <strong>@(row["leader_name"] != DBNull.Value ? row["leader_name"] : "Asignación pendiente")</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <a href="@Url.Action("AttendanceReport", "SmallGroups", new { groupId = row["id"] })" class="w-full py-2 bg-gray-50 hover:bg-[#00A8CC] hover:text-white text-[#1B365D] font-bold text-xs rounded-xl transition flex items-center justify-center space-x-2 border border-gray-200 hover:border-transparent">
+                            <i class="fa-solid fa-clipboard-user"></i>
+                            <span>Registrar / Ver Asistencia</span>
+                        </a>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

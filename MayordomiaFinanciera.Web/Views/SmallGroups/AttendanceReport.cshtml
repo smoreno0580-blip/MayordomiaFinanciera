@@ -1,0 +1,122 @@
+﻿@model MayordomiaFinanciera.Web.Models.Church.GroupAttendanceDto
+@{
+    ViewData["Title"] = "Reporte de Asistencia - Célula";
+    Layout = "_Layout";
+    var history = ViewBag.History as System.Data.DataTable;
+    string groupName = ViewBag.GroupName ?? "Grupo Pequeño";
+}
+
+<div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    <div class="border-b pb-4 flex items-center justify-between">
+        <div>
+            <a href="@Url.Action("Index", "SmallGroups")" class="text-xs font-bold text-[#00A8CC] hover:underline mb-1 inline-block">
+                <i class="fa-solid fa-arrow-left mr-1"></i> Volver al listado de grupos
+            </a>
+            <h1 class="text-2xl font-black text-[#1B365D]">Reporte de Asistencia: @groupName</h1>
+            <p class="text-xs text-gray-500">Registra cuántas almas se congregaron esta semana y anota motivos de oración breves.</p>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 text-xs text-emerald-800 rounded-r-xl shadow-sm">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Formulario de Registro Rápido -->
+        <div class="md:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+            <h2 class="text-sm font-bold text-[#1B365D] uppercase tracking-wider border-b pb-2">
+                <i class="fa-solid fa-square-plus text-[#00A8CC] mr-1"></i> Nuevo Reporte
+            </h2>
+
+            <form asp-action="AttendanceReport" method="post" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="GroupId" />
+                <input type="hidden" asp-for="ChurchId" />
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fecha de Reunión</label>
+                    <input asp-for="MeetingDate" type="date" class="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-[#00A8CC] focus:outline-none" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Total de Asistentes</label>
+                    <input asp-for="AttendeeCount" type="number" min="0" class="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-[#00A8CC] focus:outline-none font-bold text-[#1B365D]" placeholder="Ej. 12" required />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Notas / Motivos de Oración</label>
+                    <textarea asp-for="Notes" rows="3" class="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-[#00A8CC] focus:outline-none" placeholder="Breve resumen o peticiones especiales..."></textarea>
+                </div>
+
+                <button type="submit" class="w-full py-2.5 bg-[#00A8CC] hover:bg-[#008fa8] text-white font-bold text-xs rounded-xl shadow transition">
+                    Guardar Reporte Semanal
+                </button>
+            </form>
+        </div>
+
+        <!-- Historial Reciente de Asistencia -->
+        <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+                <h2 class="text-sm font-bold text-[#1B365D] uppercase tracking-wider flex items-center space-x-2">
+                    <i class="fa-solid fa-clock-rotate-left text-[#00A8CC]"></i>
+                    <span>Historial Reciente de Reuniones</span>
+                </h2>
+
+                @if (Model != null && Model.GroupId != Guid.Empty)
+                {
+                    <a href="@Url.Action("ExportAttendanceCsv", "SmallGroups", new { groupId = Model.GroupId })"
+                       class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow transition flex items-center space-x-1.5 shrink-0">
+                        <i class="fa-solid fa-file-csv text-sm"></i>
+                        <span>Exportar CSV</span>
+                    </a>
+                }
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-700 uppercase">
+                            <th class="p-3 rounded-l-lg">Fecha</th>
+                            <th class="p-3">Asistentes</th>
+                            <th class="p-3">Notas / Peticiones</th>
+                            <th class="p-3 rounded-r-lg">Reportado por</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @if (history == null || history.Rows.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="4" class="p-4 text-center text-gray-400">Aún no hay reportes registrados para este grupo.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (System.Data.DataRow row in history.Rows)
+                            {
+                                <tr>
+                                    <td class="p-3 font-semibold text-gray-800">
+                                        @(Convert.ToDateTime(row["meeting_date"]).ToString("dd/MM/yyyy"))
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-0.5 bg-blue-50 text-blue-700 font-bold rounded-md">
+                                            @row["attendee_count"] pers.
+                                        </span>
+                                    </td>
+                                    <td class="p-3 text-gray-600 max-w-xs truncate">
+                                        @(row["notes"] != DBNull.Value && !string.IsNullOrWhiteSpace(row["notes"]?.ToString()) ? row["notes"] : "Sin notas adicionales.")
+                                    </td>
+                                    <td class="p-3 text-gray-500 font-mono">
+                                        @(history.Columns.Contains("reported_by") && row["reported_by"] != DBNull.Value ? row["reported_by"] : (history.Columns.Contains("created_by_name") && row["created_by_name"] != DBNull.Value ? row["created_by_name"] : "Sistema"))
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -9,12 +9,63 @@
     int totalSessions = ViewBag.TotalSessions ?? 0;
     int birthdaysCount = ViewBag.BirthdaysCount ?? 0;
     DataTable recentPosts = ViewBag.RecentPosts as DataTable ?? new DataTable();
-    bool isStudent = User.IsInRole("student");
+    DataTable churchBulletins = ViewBag.ChurchBulletins as DataTable ?? new DataTable();
+    bool isStudent = User.IsInRole("student") || User.IsInRole("MIEMBRO") || User.IsInRole("miembro");
+
+    // Obtener el rol eclesial específico de la base de datos y claims
+    string churchRole = ViewBag.ChurchRole as string ?? "";
+    string userRoleClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value?.ToUpper() ?? "";
+
+    // Validar si el usuario en sesión es Pastor Principal o Administrador de la congregación
+    bool isMainPastorOrAdmin = churchRole.Contains("PASTOR") ||
+                               churchRole.Contains("ADMIN") ||
+                               userRoleClaim.Contains("PASTOR") ||
+                               userRoleClaim.Contains("ADMIN") ||
+                               User.IsInRole("admin") ||
+                               User.IsInRole("ADMIN") ||
+                               User.IsInRole("pastor") ||
+                               User.IsInRole("PASTOR");
+
+    string churchName = ViewBag.ChurchName as string ?? "";
+
+    // Datos de suscripción y periodo de gracia enviados desde el controlador
+    string subscriptionStatus = ViewBag.SubscriptionStatus as string ?? "ACTIVE";
+    DateTime? nextBillingDate = ViewBag.NextBillingDate as DateTime?;
+
+    bool isPastDue = nextBillingDate.HasValue && DateTime.Now > nextBillingDate.Value;
+    int daysInGrace = isPastDue && nextBillingDate.HasValue ? (int)(DateTime.Now - nextBillingDate.Value).TotalDays : 0;
+    bool isInGracePeriod = isPastDue && daysInGrace <= 7;
 }
 
-<div class="mb-8">
-    <h1 class="text-3xl font-extrabold text-[#1B365D]">Panel de Control</h1>
-    <p class="text-gray-500 text-sm mt-1">Resumen general y métricas operativas de Mayordomía y Finanzas.</p>
+<!-- Banner / Encabezado Principal del Dashboard -->
+<div class="mb-8 bg-gradient-to-r from-[#1B365D] via-[#162d4e] to-[#00A8CC] p-6 md:p-8 rounded-2xl text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div>
+        <div class="flex items-center space-x-2 mb-2">
+            <span class="text-xs uppercase tracking-wider font-semibold opacity-80">Bienvenido de nuevo</span>
+            @if (!string.IsNullOrEmpty(churchName))
+            {
+                <span class="inline-flex items-center space-x-1.5 bg-white/20 backdrop-blur-md px-3 py-0.5 rounded-full text-xs font-bold text-white border border-white/20">
+                    <i class="fa-solid fa-church text-amber-300"></i>
+                    <span>@churchName</span>
+                </span>
+            }
+        </div>
+        <h1 class="text-2xl md:text-3xl font-black">Panel de Control</h1>
+        <p class="text-xs md:text-sm text-blue-100 mt-1">Resumen general y métricas operativas de Mayordomía y Finanzas.</p>
+    </div>
+
+    @if (!string.IsNullOrEmpty(churchName))
+    {
+        <div class="hidden md:flex items-center space-x-3 bg-white/10 backdrop-blur-sm px-4 py-3 rounded-xl border border-white/10 shrink-0">
+            <div class="w-10 h-10 rounded-lg bg-amber-400/20 flex items-center justify-center text-amber-300 text-lg font-black">
+                <i class="fa-solid fa-place-of-worship"></i>
+            </div>
+            <div>
+                <span class="block text-[10px] uppercase font-bold text-blue-200">Iglesia / Ministerio</span>
+                <span class="text-xs font-bold text-white">@churchName</span>
+            </div>
+        </div>
+    }
 </div>
 
 <!-- Tarjetas KPI Dinámicas -->
@@ -64,6 +115,86 @@
     </div>
 </div>
 
+<!-- SECCIÓN: Estado de la Suscripción Ministerial (Visible solo para el Pastor Principal o Administrador) -->
+@if (isMainPastorOrAdmin)
+{
+    <div class="mb-8 p-6 rounded-xl shadow-sm border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 @(isInGracePeriod ? "bg-amber-50 border-amber-200" : "bg-white border-gray-200")">
+        <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 @(isInGracePeriod ? "bg-amber-100 text-amber-600" : "bg-emerald-50 text-emerald-600")">
+                <i class="fa-solid @(isInGracePeriod ? "fa-triangle-exclamation" : "fa-shield-halved")"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-[#1B365D]">Estado de la Suscripción Ministerial</h3>
+                <p class="text-xs text-gray-500">
+                    @if (isInGracePeriod)
+                    {
+                        <span class="text-amber-700 font-semibold">Tu suscripción ha llegado a su fecha de corte. Estás en período de gracia (Día @daysInGrace de 7). Realiza tu pago para evitar el bloqueo.</span>
+                    }
+                    else
+                    {
+                        <span>Monitorea la vigencia de tu cuenta y los pagos mensuales de soporte de la congregación.</span>
+                    }
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3 w-full md:w-auto justify-end">
+            @if (isInGracePeriod)
+            {
+                <span class="px-3 py-1 bg-amber-100 text-amber-800 font-bold text-xs rounded-lg border border-amber-200 flex items-center">
+                    <i class="fa-solid fa-clock mr-1.5 text-amber-600"></i> Gracia Activa (Quedan @(7 - daysInGrace) días)
+                </span>
+            }
+            else
+            {
+                <span class="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-lg border border-emerald-100 flex items-center">
+                    <i class="fa-solid fa-circle-check mr-1.5 text-emerald-600"></i> Al Día (Activa)
+                </span>
+            }
+            <a href="@Url.Action("PendingPayment", "Subscription")" class="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg transition">
+                Ver Detalles de Pago
+            </a>
+        </div>
+    </div>
+}
+
+<!-- SECCIÓN: Boletines y Avisos Oficiales para la Congregación -->
+<div class="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+    <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+        <h3 class="font-bold text-[#1B365D] text-base flex items-center">
+            <i class="fa-solid fa-bullhorn text-[#00A8CC] mr-2"></i> Avisos y Boletines Oficiales
+        </h3>
+        <a href="@Url.Action("Index", "Bulletins")" class="text-xs font-bold text-[#00A8CC] hover:underline">
+            Ver todos <i class="fa-solid fa-arrow-right ml-1"></i>
+        </a>
+    </div>
+
+    @if (churchBulletins.Rows.Count == 0)
+    {
+        <div class="text-center py-6 text-gray-400 text-xs">
+            <i class="fa-regular fa-newspaper text-2xl mb-2 block text-gray-300"></i>
+            No hay avisos o boletines publicados en este momento.
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach (DataRow bRow in churchBulletins.Rows)
+            {
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col justify-between space-y-2 hover:shadow-sm transition">
+                    <div>
+                        <span class="text-[10px] font-bold text-[#00A8CC] bg-blue-50 px-2 py-0.5 rounded-md inline-block mb-1">
+                            <i class="fa-solid fa-calendar-day mr-1"></i> @(bRow["publish_date"] != DBNull.Value ? Convert.ToDateTime(bRow["publish_date"]).ToString("dd/MM/yyyy") : "Reciente")
+                        </span>
+                        <h4 class="text-sm font-bold text-[#1B365D]">@bRow["title"]</h4>
+                        <p class="text-xs text-gray-600 line-clamp-2 mt-1 leading-relaxed">@bRow["content"]</p>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
 <!-- Sección Inferior: Accesos Rápidos y Actividad Reciente -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
     <!-- Columna Izquierda: Accesos Directos -->
@@ -105,14 +236,14 @@
                 int limit = 0;
                 foreach (DataRow pRow in recentPosts.Rows)
                 {
-                    if (limit >= 3) break; // Mostrar solo las 3 últimas
-                                           <div class="p-4 rounded-lg bg-gray-50 border border-gray-100">
-                                               <div class="flex justify-between items-center mb-1">
-                                                   <span class="font-bold text-xs text-[#1B365D]">@pRow["Name"]</span>
-                                                   <span class="text-[11px] text-gray-400">@Convert.ToDateTime(pRow["CreatedAt"]).ToString("dd/MM/yyyy HH:mm")</span>
-                                               </div>
-                                               <p class="text-xs text-gray-600 line-clamp-2">@pRow["Content"]</p>
-                                           </div>
+                    if (limit >= 3) break;
+                    <div class="p-4 rounded-lg bg-gray-50 border border-gray-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-xs text-[#1B365D]">@(pRow.Table.Columns.Contains("Name") && pRow["Name"] != DBNull.Value ? pRow["Name"] : (pRow.Table.Columns.Contains("name") && pRow["name"] != DBNull.Value ? pRow["name"] : "Usuario"))</span>
+                            <span class="text-[11px] text-gray-400">@(pRow.Table.Columns.Contains("CreatedAt") && pRow["CreatedAt"] != DBNull.Value ? Convert.ToDateTime(pRow["CreatedAt"]).ToString("dd/MM/yyyy HH:mm") : (pRow.Table.Columns.Contains("created_at") && pRow["created_at"] != DBNull.Value ? Convert.ToDateTime(pRow["created_at"]).ToString("dd/MM/yyyy HH:mm") : ""))</span>
+                        </div>
+                        <p class="text-xs text-gray-600 line-clamp-2">@(pRow.Table.Columns.Contains("Content") && pRow["Content"] != DBNull.Value ? pRow["Content"] : (pRow.Table.Columns.Contains("content") && pRow["content"] != DBNull.Value ? pRow["content"] : ""))</p>
+                    </div>
                     limit++;
                 }
             }

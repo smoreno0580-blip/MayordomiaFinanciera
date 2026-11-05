@@ -1,0 +1,111 @@
+﻿@using System.Data
+@model DataTable
+@{
+    ViewData["Title"] = "Gestión de Suscripciones y Pagos";
+    Layout = "_Layout";
+}
+
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b pb-4">
+        <div>
+            <h1 class="text-2xl font-black text-[#1B365D]">Gestión de Suscripciones Mensuales</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Controla el estado de cobro, registra pagos y gestiona el acceso activo de las iglesias registradas.</p>
+        </div>
+        <div>
+            <a href="@Url.Action("ExportCsv", "Subscription")" class="inline-flex items-center space-x-2 px-4 py-2 bg-[#1B365D] hover:bg-[#152a48] text-white font-bold text-xs rounded-xl shadow-sm transition">
+                <i class="fa-solid fa-file-arrow-down"></i>
+                <span>Descargar CSV</span>
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 text-xs text-emerald-800 rounded-r-xl shadow-sm">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 text-xs text-red-800 rounded-r-xl shadow-sm">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-700 uppercase">
+                        <th class="p-4">Iglesia / Ministerio</th>
+                        <th class="p-4">Estado</th>
+                        <th class="p-4">Último Pago</th>
+                        <th class="p-4">Próximo Corte</th>
+                        <th class="p-4 text-right">Acciones de Cobro</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @if (Model == null || Model.Rows.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="p-6 text-center text-gray-400">No hay iglesias registradas en el sistema.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (DataRow row in Model.Rows)
+                        {
+                            string status = row["subscription_status"]?.ToString()?.ToUpper() ?? "ACTIVE";
+                            bool isActive = status == "ACTIVE";
+                            DateTime? nextBilling = row["next_billing_date"] != DBNull.Value ? Convert.ToDateTime(row["next_billing_date"]) : (DateTime?)null;
+                            bool isExpired = nextBilling.HasValue && nextBilling.Value < DateTime.Now;
+
+                            <tr>
+                                <td class="p-4 font-bold text-[#1B365D]">
+                                    @row["name"]
+                                </td>
+                                <td class="p-4">
+                                    @if (isActive && !isExpired)
+                                    {
+                                        <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-lg">ACTIVA</span>
+                                    }
+                                    else if (status == "SUSPENDED" || isExpired)
+                                    {
+                                        <span class="px-2.5 py-1 bg-red-50 text-red-700 font-bold rounded-lg">VENCIDA / SUSPENDIDA</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="px-2.5 py-1 bg-amber-50 text-amber-700 font-bold rounded-lg">@status</span>
+                                    }
+                                </td>
+                                <td class="p-4 text-gray-600">
+                                    @(row["last_payment_date"] != DBNull.Value ? Convert.ToDateTime(row["last_payment_date"]).ToString("dd/MM/yyyy") : "N/A")
+                                </td>
+                                <td class="p-4 font-semibold text-gray-700">
+                                    @(nextBilling.HasValue? nextBilling.Value.ToString("dd/MM/yyyy") : "N/A")
+                                </td>
+                                <td class="p-4 text-right space-x-2">
+                                    <form asp-action="RegisterPayment" method="post" class="inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="churchId" value="@row["id"]" />
+                                        <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm transition">
+                                            <i class="fa-solid fa-check mr-1"></i> Registrar Pago
+                                        </button>
+                                    </form>
+
+                                    <form asp-action="SuspendSubscription" method="post" class="inline" onsubmit="return confirm('¿Estás seguro de suspender el acceso a esta iglesia?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="churchId" value="@row["id"]" />
+                                        <button type="submit" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-sm transition">
+                                            <i class="fa-solid fa-ban mr-1"></i> Suspender
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

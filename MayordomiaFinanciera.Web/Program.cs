@@ -9,6 +9,12 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllersWithViews(options =>
+{
+    // Registrar globalmente la validación de la suscripción de la iglesia
+    options.Filters.Add<MayordomiaFinanciera.Web.Filters.CheckChurchSubscriptionAttribute>();
+});
+
 // Cargar configuración de SmtpSettings
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 
@@ -21,7 +27,6 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 // 1. Agregar servicios MVC
 builder.Services.AddControllersWithViews();
 
-// 2. Configurar Autenticación de Cookies Seguras (Paso 5)
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -38,6 +43,14 @@ builder.Services.AddScoped<IBudgetRepository, BudgetRepository>();
 builder.Services.AddScoped<IFinancialStatementRepository, FinancialStatementRepository>();
 
 builder.Services.AddScoped<IDebtSnowballRepository, DebtSnowballRepository>();
+
+builder.Services.AddScoped<IChurchRepository, ChurchRepository>();
+
+builder.Services.AddScoped<ISubscriptionPolicyService, SubscriptionPolicyService>();
+
+builder.Services.AddHttpClient();
+
+builder.Services.AddScoped<IPaymentVerificationService, PaymentVerificationService>();
 
 // 3. Configurar Limitador de Peticiones para evitar Ataques de Fuerza Bruta (Paso 6)
 builder.Services.AddRateLimiter(options =>

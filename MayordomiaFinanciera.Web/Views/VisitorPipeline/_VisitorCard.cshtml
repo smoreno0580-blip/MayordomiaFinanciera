@@ -1,0 +1,32 @@
+﻿@model System.Data.DataRow
+
+<div class="bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 space-y-2 hover:shadow-md transition">
+    <div class="flex items-start justify-between">
+        <h3 class="text-xs font-bold text-[#1B365D] uppercase truncate">@Model["full_name"]</h3>
+        <a href="@Url.Action("Upsert", "VisitorPipeline", new { id = Model["id"] })" class="text-gray-400 hover:text-[#00A8CC] text-[11px]">
+            <i class="fa-solid fa-pen-to-square"></i>
+        </a>
+    </div>
+
+    @if (Model["phone"] != DBNull.Value && !string.IsNullOrEmpty(Model["phone"].ToString()))
+    {
+        <div class="text-[11px] text-gray-500 flex items-center space-x-1.5">
+            <i class="fa-brands fa-whatsapp text-emerald-600"></i>
+            <a href="https://wa.me/@(Model["phone"]?.ToString()?.Replace("+", "").Replace(" ", ""))" target="_blank" class="hover:underline">
+                @Model["phone"]
+            </a>
+        </div>
+    }
+
+    @if (Model["assigned_to"] != DBNull.Value && !string.IsNullOrEmpty(Model["assigned_to"].ToString()))
+    {
+        <div class="text-[10px] text-gray-400 flex items-center space-x-1">
+            <i class="fa-solid fa-user-shield text-blue-500"></i>
+            <span>Mentor: <strong>@Model["assigned_to"]</strong></span>
+        </div>
+    }
+
+    <div class="text-[10px] text-gray-400 pt-1 border-t border-gray-50 flex items-center justify-between">
+        <span>Visitó: @(Model["visit_date"] != DBNull.Value ? Convert.ToDateTime(Model["visit_date"]).ToString("dd/MM/yyyy") : "-")</span>
+    </div>
+</div>

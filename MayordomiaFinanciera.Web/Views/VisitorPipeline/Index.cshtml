@@ -1,0 +1,123 @@
+﻿@model System.Data.DataTable
+@{
+    ViewData["Title"] = "Ruta de Crecimiento del Visitante";
+    Layout = "_Layout";
+
+    // Clasificar filas por etapas
+    var bienvenidaRows = Model.Select("stage = 'Bienvenida'");
+    var crecimientoRows = Model.Select("stage = 'Crecimiento'");
+    var consolidadoRows = Model.Select("stage = 'Consolidado'");
+    var servidorRows = Model.Select("stage = 'Servidor'");
+}
+
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+    <!-- Encabezado -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b pb-4">
+        <div>
+            <h1 class="text-2xl font-black text-[#1B365D]">Ruta de Crecimiento (Visitantes)</h1>
+            <p class="text-xs text-gray-500 mt-0.5">
+                Da seguimiento personalizado a las almas desde su primera visita hasta integrarse como servidores activos.
+            </p>
+        </div>
+        <a href="@Url.Action("Upsert", "VisitorPipeline")" class="px-5 py-2.5 bg-[#00A8CC] hover:bg-[#008fa8] text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-2">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Registrar Nuevo Visitante</span>
+        </a>
+        <a href="@Url.Action("ExportCsv", "VisitorPipeline")" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-2">
+            <i class="fa-solid fa-file-csv text-sm"></i>
+            <span>Exportar CSV Visitantes</span>
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 text-xs text-emerald-800 rounded-r-xl shadow-sm">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <!-- Tablero de 4 Etapas -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+        <!-- Etapa 1: Bienvenida -->
+        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-gray-200">
+                <span class="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> 1. Bienvenida
+                </span>
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-bold">@bienvenidaRows.Length</span>
+            </div>
+            <div class="space-y-3">
+                @foreach (var row in bienvenidaRows)
+                {
+                    @Html.Partial("_VisitorCard", row)
+                }
+                @if (bienvenidaRows.Length == 0)
+                {
+                    <p class="text-[11px] text-gray-400 text-center py-4 italic">Sin personas en esta etapa</p>
+                }
+            </div>
+        </div>
+
+        <!-- Etapa 2: Crecimiento / Fundamentos -->
+        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-gray-200">
+                <span class="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 2. Crecimiento
+                </span>
+                <span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">@crecimientoRows.Length</span>
+            </div>
+            <div class="space-y-3">
+                @foreach (var row in crecimientoRows)
+                {
+                    @Html.Partial("_VisitorCard", row)
+                }
+                @if (crecimientoRows.Length == 0)
+                {
+                    <p class="text-[11px] text-gray-400 text-center py-4 italic">Sin personas en esta etapa</p>
+                }
+            </div>
+        </div>
+
+        <!-- Etapa 3: Consolidado / Bautizado -->
+        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-gray-200">
+                <span class="text-xs font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> 3. Consolidado
+                </span>
+                <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold">@consolidadoRows.Length</span>
+            </div>
+            <div class="space-y-3">
+                @foreach (var row in consolidadoRows)
+                {
+                    @Html.Partial("_VisitorCard", row)
+                }
+                @if (consolidadoRows.Length == 0)
+                {
+                    <p class="text-[11px] text-gray-400 text-center py-4 italic">Sin personas en esta etapa</p>
+                }
+            </div>
+        </div>
+
+        <!-- Etapa 4: Servidor Activo -->
+        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-gray-200">
+                <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 4. Servidor
+                </span>
+                <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">@servidorRows.Length</span>
+            </div>
+            <div class="space-y-3">
+                @foreach (var row in servidorRows)
+                {
+                    @Html.Partial("_VisitorCard", row)
+                }
+                @if (servidorRows.Length == 0)
+                {
+                    <p class="text-[11px] text-gray-400 text-center py-4 italic">Sin personas en esta etapa</p>
+                }
+            </div>
+        </div>
+
+    </div>
+</div>

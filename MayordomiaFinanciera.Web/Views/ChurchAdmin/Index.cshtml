@@ -1,0 +1,89 @@
+﻿@model MayordomiaFinanciera.Web.Models.Church.ChurchDto
+@{
+    ViewData["Title"] = "Panel de Administración Eclesial";
+    Layout = "_Layout";
+    var members = ViewBag.Members as IEnumerable<dynamic> ?? new List<dynamic>();
+    var codes = ViewBag.InvitationCodes as IEnumerable<dynamic> ?? new List<dynamic>();
+}
+
+<div class="space-y-6">
+    <!-- Header de la Iglesia -->
+    <div class="bg-[#1B365D] rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <span class="text-xs font-bold text-[#00A8CC] uppercase tracking-wider">Panel Administrativo Pastoral</span>
+            <h1 class="text-2xl font-black mt-1">@Model.Name</h1>
+            <p class="text-xs text-gray-300 mt-1">
+                Plan: <span class="font-bold text-[#00A8CC]">@Model.SubscriptionPlan</span> |
+                Estado: <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">@Model.SubscriptionStatus</span>
+            </p>
+        </div>
+        <div class="bg-white/10 px-4 py-3 rounded-xl border border-white/10 text-right">
+            <span class="text-[10px] uppercase text-gray-300 block font-semibold">Capacidad de Miembros</span>
+            <span class="text-lg font-black text-[#00A8CC]">@members.Count() / @Model.MaxMembers</span>
+        </div>
+    </div>
+
+    <!-- Grid de Gestión -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Lista de Códigos de Invitación -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                <h2 class="font-bold text-sm text-[#1B365D] flex items-center">
+                    <i class="fa-solid fa-key text-[#00A8CC] mr-2"></i> Códigos de Invitación
+                </h2>
+            </div>
+            <div class="space-y-2">
+                @foreach (var code in codes)
+                {
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <div>
+                            <span class="font-mono text-sm font-bold text-[#1B365D]">@code.code</span>
+                            <span class="block text-[10px] text-gray-400">Creado: @code.createdat.ToString("dd/MM/yyyy")</span>
+                        </div>
+                        <span class="px-2 py-1 rounded-md text-[10px] font-bold @(code.isactive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")">
+                            @(code.isactive ? "Activo" : "Inactivo")
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Tabla de Miembros Vinculados de la Congregación -->
+        <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                <h2 class="font-bold text-sm text-[#1B365D] flex items-center">
+                    <i class="fa-solid fa-users text-[#00A8CC] mr-2"></i> Congregantes Registrados
+                </h2>
+                <span class="text-xs text-gray-500 font-medium">Total: @members.Count()</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="text-gray-400 uppercase border-b border-gray-100 text-[10px]">
+                            <th class="py-2">Usuario / Correo</th>
+                            <th class="py-2">Rol en Iglesia</th>
+                            <th class="py-2 text-right">Fecha Afiliación</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach (var member in members)
+                        {
+                            <tr class="hover:bg-gray-50">
+                                <td class="py-2.5 font-semibold text-gray-800">@member.email</td>
+                                <td class="py-2.5">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#1B365D]/10 text-[#1B365D]">
+                                        @member.role
+                                    </span>
+                                </td>
+                                <td class="py-2.5 text-right text-gray-500">@member.joinedat.ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
