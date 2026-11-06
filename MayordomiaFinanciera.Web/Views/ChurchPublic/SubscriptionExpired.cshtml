@@ -1,0 +1,237 @@
+﻿@model MayordomiaFinanciera.Web.Models.Church.ChurchDto
+@{
+    ViewData["Title"] = "Prueba Demo Finalizada - Mayordomía SaaS";
+    Layout = "_Layout";
+    var globalSettings = ViewBag.GlobalPaymentSettings as MayordomiaFinanciera.Web.Models.Church.GlobalPaymentSettingsDto
+                         ?? new MayordomiaFinanciera.Web.Models.Church.GlobalPaymentSettingsDto();
+}
+
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<script src="https://www.paypal.com/sdk/js?client-id=@(globalSettings.SaasPaypalClientId)&currency=USD"></script>
+
+<div class="max-w-4xl mx-auto space-y-8 py-8 px-4" x-data="{ selectedPlan: 'MINISTERIAL', activeTab: 'PAYPAL' }">
+
+    <!-- Encabezado de Alerta -->
+    <div class="bg-gradient-to-r from-amber-500 to-orange-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+        <div class="absolute right-0 top-0 translate-x-8 -translate-y-8 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6 text-center md:text-left">
+            <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold shrink-0 text-white shadow-inner">
+                <i class="fa-solid fa-hourglass-end text-3xl"></i>
+            </div>
+            <div class="space-y-1">
+                <span class="inline-block px-3 py-1 bg-white/20 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-amber-100">
+                    Suscripción Pausada
+                </span>
+                <h1 class="text-2xl sm:text-3xl font-black">¡Tu período de prueba de 30 días ha finalizado!</h1>
+                <p class="text-xs sm:text-sm text-amber-100 max-w-2xl">
+                    Esperamos que <strong>@Model.Name</strong> haya experimentado la bendición de organizar sus finanzas bajo principios bíblicos. Selecciona un plan ministerial para reactivar inmediatamente el acceso de tu equipo pastoral y congregación.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl text-red-700 text-xs flex items-center">
+            <i class="fa-solid fa-triangle-exclamation mr-2 text-sm"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    <!-- 1. SELECCIÓN DE PLAN MINISTERIAL -->
+    <div class="space-y-4">
+        <div class="text-center sm:text-left">
+            <h2 class="text-lg font-black text-[#1B365D] uppercase tracking-wide">1. Selecciona el Plan para tu Congregación</h2>
+            <p class="text-xs text-gray-500">Puedes cambiar o actualizar tu plan en cualquier momento.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Plan Semilla -->
+            <div x-on:click="selectedPlan = 'SEED'"
+                 :class="selectedPlan === 'SEED' ? 'border-[#00A8CC] ring-2 ring-[#00A8CC]/20 bg-sky-50/30' : 'border-gray-200 bg-white hover:border-gray-300'"
+                 class="p-5 rounded-2xl border-2 transition cursor-pointer relative flex flex-col justify-between space-y-4 shadow-sm">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-black uppercase text-gray-500">Plan Semilla</span>
+                        <div x-show="selectedPlan === 'SEED'" class="text-[#00A8CC]"><i class="fa-solid fa-circle-check text-lg"></i></div>
+                    </div>
+                    <div class="flex items-baseline space-x-1">
+                        <span class="text-3xl font-black text-[#1B365D]">$25</span>
+                        <span class="text-xs text-gray-500 font-bold">/ mes</span>
+                    </div>
+                    <p class="text-xs text-gray-600 mt-2">Ideal para misiones o congregaciones en desarrollo.</p>
+                </div>
+                <ul class="text-xs text-gray-600 space-y-2 pt-3 border-t border-gray-100">
+                    <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Hasta 50 miembros</li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Módulo de Diezmos y Ofrendas</li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Reportes Financieros Básicos</li>
+                </ul>
+            </div>
+
+            <!-- Plan Ministerial -->
+            <div x-on:click="selectedPlan = 'MINISTERIAL'"
+                 :class="selectedPlan === 'MINISTERIAL' ? 'border-[#1B365D] ring-2 ring-[#1B365D]/20 bg-slate-50' : 'border-gray-200 bg-white hover:border-gray-300'"
+                 class="p-5 rounded-2xl border-2 transition cursor-pointer relative flex flex-col justify-between space-y-4 shadow-sm">
+                <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#1B365D] text-white text-[10px] font-black uppercase px-3 py-0.5 rounded-full shadow">
+                    Recomendado
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-black uppercase text-[#1B365D]">Plan Ministerial</span>
+                        <div x-show="selectedPlan === 'MINISTERIAL'" class="text-[#1B365D]"><i class="fa-solid fa-circle-check text-lg"></i></div>
+                    </div>
+                    <div class="flex items-baseline space-x-1">
+                        <span class="text-3xl font-black text-[#1B365D]">$50</span>
+                        <span class="text-xs text-gray-500 font-bold">/ mes</span>
+                    </div>
+                    <p class="text-xs text-gray-600 mt-2">Para iglesias consolidadas con múltiples ministerios.</p>
+                </div>
+                <ul class="text-xs text-gray-600 space-y-2 pt-3 border-t border-gray-100">
+                    <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Hasta 200 miembros</li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Gestión de Presupuestos Anuales</li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Control de Voluntariados y Equipos</li>
+                </ul>
+            </div>
+
+            <!-- Plan Catedral -->
+            <div x-on:click="selectedPlan = 'CATHEDRAL'"
+                 :class="selectedPlan === 'CATHEDRAL' ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/20' : 'border-gray-200 bg-white hover:border-gray-300'"
+                 class="p-5 rounded-2xl border-2 transition cursor-pointer relative flex flex-col justify-between space-y-4 shadow-sm">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-black uppercase text-amber-600">Plan Catedral</span>
+                        <div x-show="selectedPlan === 'CATHEDRAL'" class="text-amber-500"><i class="fa-solid fa-circle-check text-lg"></i></div>
+                    </div>
+                    <div class="flex items-baseline space-x-1">
+                        <span class="text-3xl font-black text-[#1B365D]">$100</span>
+                        <span class="text-xs text-gray-500 font-bold">/ mes</span>
+                    </div>
+                    <p class="text-xs text-gray-600 mt-2">Para megaiNode o sedes múltiples con alta actividad.</p>
+                </div>
+                <ul class="text-xs text-gray-600 space-y-2 pt-3 border-t border-gray-100">
+                    <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Hasta 1,000 miembros</li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Auditoría Avanzada y Proyecciones</li>
+                    <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Soporte Prioritario 24/7</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MÉTODOS DE PAGO Y REACTIVACIÓN -->
+    <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-200 space-y-6">
+        <div class="border-b border-gray-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+                <h2 class="text-base font-black text-[#1B365D] uppercase">2. Métodos de Pago Disponibles</h2>
+                <p class="text-xs text-gray-500">Realiza tu pago y envía la referencia para la aprobación inmediata del SuperAdmin.</p>
+            </div>
+            <div class="px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold text-center">
+                Monto a Pagar: <span class="text-sm font-black text-emerald-700" x-text="selectedPlan === 'CATHEDRAL' ? '$100.00' : (selectedPlan === 'MINISTERIAL' ? '$50.00' : '$25.00')"></span>
+            </div>
+        </div>
+
+        <!-- Pestañas de Pago -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 p-1.5 bg-gray-100 rounded-2xl text-xs font-bold">
+            <button type="button"
+                    x-on:click="activeTab = 'PAYPAL'"
+                    :class="activeTab === 'PAYPAL' ? 'bg-white text-[#1B365D] shadow-sm' : 'text-gray-500'"
+                    class="py-3 rounded-xl transition text-center flex items-center justify-center">
+                <i class="fa-brands fa-paypal text-blue-600 text-base mr-2"></i> PayPal
+            </button>
+
+            <button type="button"
+                    x-on:click="activeTab = 'ACH_TRANSFER'"
+                    :class="activeTab === 'ACH_TRANSFER' ? 'bg-white text-[#1B365D] shadow-sm' : 'text-gray-500'"
+                    class="py-3 rounded-xl transition text-center flex items-center justify-center">
+                <i class="fa-solid fa-building-columns text-[#1B365D] text-base mr-2"></i> ACH Bancario
+            </button>
+
+            <button type="button"
+                    x-on:click="activeTab = 'YAPPY'"
+                    :class="activeTab === 'YAPPY' ? 'bg-white text-[#1B365D] shadow-sm' : 'text-gray-500'"
+                    class="py-3 rounded-xl transition text-center flex items-center justify-center">
+                <i class="fa-solid fa-mobile-screen-button text-sky-500 text-base mr-2"></i> Yappy
+            </button>
+        </div>
+
+        <!-- TAB 1: PayPal -->
+        <div x-show="activeTab === 'PAYPAL'" class="bg-gray-50 p-6 rounded-2xl border border-gray-200 text-center space-y-4">
+            <p class="text-xs text-gray-600 max-w-md mx-auto">
+                Haz clic en el botón inferior para autorizar la renovación con PayPal (@globalSettings.SaasPaypalEmail). La cuenta se activará automáticamente al capturar la orden.
+            </p>
+            <div id="paypal-renovate-container" class="max-w-xs mx-auto"></div>
+        </div>
+
+        <!-- TAB 2 & 3: Formulario para ACH y Yappy -->
+        <form asp-controller="ChurchPublic" asp-action="ProcessSubscription" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ChurchId" value="@Model.Id" />
+            <input type="hidden" name="SubscriptionPlan" :value="selectedPlan" />
+            <input type="hidden" name="paymentMethod" :value="activeTab" />
+
+            <!-- ACH Details -->
+            <div x-show="activeTab === 'ACH_TRANSFER'" class="bg-gray-50 p-5 rounded-2xl border border-gray-200 space-y-4" style="display: none;">
+                <div class="bg-white p-4 rounded-xl border border-gray-200 font-mono text-xs space-y-1.5 text-gray-700">
+                    <div><strong>Banco:</strong> @globalSettings.SaasAchBankName</div>
+                    <div><strong>Tipo de Cuenta:</strong> @globalSettings.SaasAchAccountType</div>
+                    <div><strong>Número de Cuenta:</strong> @globalSettings.SaasAchAccountNumber</div>
+                    <div><strong>Beneficiario:</strong> @globalSettings.SaasAchAccountHolder</div>
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase text-[10px] mb-1">Número de Confirmación / Referencia ACH (*Requerido)</label>
+                    <input type="text" name="manualReference" required placeholder="Ej: ACH-9920182" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-mono uppercase">
+                </div>
+            </div>
+
+            <!-- Yappy Details -->
+            <div x-show="activeTab === 'YAPPY'" class="bg-gray-50 p-5 rounded-2xl border border-gray-200 space-y-4" style="display: none;">
+                <p class="text-xs text-gray-600">Busca a <strong>@globalSettings.SaasYappyAlias</strong> en Yappy Comercial e introduce el número de confirmación.</p>
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase text-[10px] mb-1">Número de Transacción Yappy (*Requerido)</label>
+                    <input type="text" name="manualReference" required placeholder="Ej: YAP-881230" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-mono uppercase">
+                </div>
+            </div>
+
+            <button x-show="activeTab !== 'PAYPAL'" type="submit"
+                    class="w-full py-4 bg-[#1B365D] hover:bg-[#00A8CC] text-white font-black text-sm rounded-xl shadow-lg transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-paper-plane text-xs"></i>
+                <span>Enviar Comprobante y Enviar para Activación</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Contacto de Asistencia -->
+    <div class="text-center space-y-1">
+        <p class="text-xs text-gray-500">¿Tienes dudas o necesitas asistencia con tu pago?</p>
+        <a href="mailto:soporte@mayordomiafinanciera.org" class="text-xs font-bold text-[#00A8CC] hover:underline">
+            Contactar al Soporte de Mayordomía Financiera
+        </a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof paypal !== 'undefined') {
+            paypal.Buttons({
+                createOrder: function (data, actions) {
+                    var container = document.querySelector('[x-data]');
+                    var plan = 'MINISTERIAL';
+                    if (container && container._x_dataStack) {
+                        plan = container._x_dataStack[0].selectedPlan;
+                    }
+                    var amount = plan === 'CATHEDRAL' ? '100.00' : (plan === 'MINISTERIAL' ? '50.00' : '25.00');
+                    return actions.order.create({
+                        purchase_units: [{
+                            amount: { value: amount }
+                        }]
+                    });
+                },
+                onApprove: function (data, actions) {
+                    return actions.order.capture().then(function (details) {
+                        // Redirigir o enviar formulario con la confirmación de PayPal
+                        window.location.href = '/ChurchPublic/ConfirmPaypalRenovation?orderId=' + details.id;
+                    });
+                }
+            }).render('#paypal-renovate-container');
+        }
+    });
+</script>

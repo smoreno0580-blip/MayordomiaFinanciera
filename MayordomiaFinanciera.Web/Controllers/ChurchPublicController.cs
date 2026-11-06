@@ -23,10 +23,13 @@ namespace MayordomiaFinanciera.Web.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Checkout(string plan = "SEED")
+        public async Task<IActionResult> Checkout(string plan = "DEMO_30")
         {
-            var model = new RegisterChurchViewModel { SubscriptionPlan = plan };
-            ViewBag.GlobalPaymentSettings = await _churchRepository.GetGlobalPaymentSettingsAsync();
+            var model = new RegisterChurchViewModel
+            {
+                SubscriptionPlan = string.IsNullOrWhiteSpace(plan) ? "DEMO_30" : plan.ToUpper()
+            };
+
             return View(model);
         }
 
@@ -51,13 +54,19 @@ namespace MayordomiaFinanciera.Web.Controllers
                 return View("Checkout", model);
             }
 
-            decimal expectedAmount = model.SubscriptionPlan == "CATHEDRAL" ? 199.00m : (model.SubscriptionPlan == "MINISTERIAL" ? 79.00m : 29.00m);
             string paymentReferenceGenerated = string.Empty;
             string initialSubscriptionStatus = "ACTIVE";
 
-            // 1. PROCESAMIENTO Y VERIFICACIÓN REAL DE TARJETA DE CRÉDITO
-            if (paymentMethod == "CREDIT_CARD")
+            // 0. MANEJO ESPECIAL PARA EL PLAN DEMO (30 DÍAS GRATIS) - SE VALIDA PRIMERO
+            if (model.SubscriptionPlan == "DEMO_30")
             {
+                paymentReferenceGenerated = "DEMO-30-TRIAL";
+                initialSubscriptionStatus = "trial"; // Asigna el estado de prueba sin requerir pago
+            }
+            // 1. PROCESAMIENTO Y VERIFICACIÓN REAL DE TARJETA DE CRÉDITO
+            else if (paymentMethod == "CREDIT_CARD")
+            {
+                decimal expectedAmount = model.SubscriptionPlan == "CATHEDRAL" ? 199.00m : (model.SubscriptionPlan == "MINISTERIAL" ? 79.00m : 29.00m);
                 var cardResult = await _paymentVerificationService.ProcessCreditCardChargeAsync(
                     cardNumber ?? "", cardExpiry ?? "", cardCvc ?? "", cardHolder ?? "", expectedAmount, globalSettings);
 
@@ -68,11 +77,12 @@ namespace MayordomiaFinanciera.Web.Controllers
                 }
 
                 paymentReferenceGenerated = cardResult.TransactionId;
-                initialSubscriptionStatus = "ACTIVE"; // Cobro verificado en vivo por la pasarela
+                initialSubscriptionStatus = "ACTIVE";
             }
             // 2. VERIFICACIÓN REAL EN SERVIDORES DE PAYPAL
             else if (paymentMethod == "PAYPAL")
             {
+                decimal expectedAmount = model.SubscriptionPlan == "CATHEDRAL" ? 199.00m : (model.SubscriptionPlan == "MINISTERIAL" ? 79.00m : 29.00m);
                 if (string.IsNullOrWhiteSpace(paypalOrderId))
                 {
                     ModelState.AddModelError(string.Empty, "No se recibió la referencia de PayPal. Por favor autoriza el pago en la ventana de PayPal.");
@@ -88,7 +98,7 @@ namespace MayordomiaFinanciera.Web.Controllers
                 }
 
                 paymentReferenceGenerated = $"PAYPAL-{paypalResult.TransactionId}";
-                initialSubscriptionStatus = "ACTIVE"; // Orden capturada y confirmada en el servidor de PayPal
+                initialSubscriptionStatus = "ACTIVE";
             }
             // 3. PAGOS MANUALES (ACH Y YAPPY) -> REVISIÓN POR EL ADMINISTRADOR
             else if (paymentMethod == "ACH_TRANSFER" || paymentMethod == "YAPPY")
@@ -101,7 +111,7 @@ namespace MayordomiaFinanciera.Web.Controllers
                 }
 
                 paymentReferenceGenerated = $"{paymentMethod}-{refClean.ToUpper()}";
-                initialSubscriptionStatus = "PENDING_VERIFICATION"; // Requiere aprobación manual
+                initialSubscriptionStatus = "PENDING_VERIFICATION";
             }
             else
             {
@@ -119,6 +129,10 @@ namespace MayordomiaFinanciera.Web.Controllers
                 if (initialSubscriptionStatus == "PENDING_VERIFICATION")
                 {
                     TempData["SuccessMessage"] = $"¡Registro recibido! Tu comprobante ({paymentReferenceGenerated}) está PENDIENTE DE VERIFICACIÓN por el administrador.";
+                }
+                else if (initialSubscriptionStatus == "trial")
+                {
+                    TempData["SuccessMessage"] = "¡Iglesia registrada exitosamente bajo el Plan Demo por 30 días! Ya puedes iniciar sesión.";
                 }
                 else
                 {

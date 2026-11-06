@@ -10,7 +10,7 @@
 <!-- SDK de PayPal leyendo dinámicamente el Client ID guardado en BD -->
 <script src="https://www.paypal.com/sdk/js?client-id=@(globalSettings.SaasPaypalClientId)&currency=USD"></script>
 
-<div class="max-w-4xl mx-auto space-y-8 py-6" x-data="{ activeTab: 'PAYPAL' }">
+<div class="max-w-4xl mx-auto space-y-8 py-6" x-data="{ activeTab: 'PAYPAL', isDemo: true }">
 
     <div class="text-center space-y-2">
         <span class="text-xs font-extrabold uppercase text-[#00A8CC] tracking-widest">Plataforma Ministerial SaaS</span>
@@ -33,7 +33,7 @@
     <form id="checkoutForm" asp-controller="ChurchPublic" asp-action="ProcessSubscription" method="post" class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg border border-gray-200 space-y-8">
         @Html.AntiForgeryToken()
 
-        <input type="hidden" name="paymentMethod" :value="activeTab" />
+        <input type="hidden" name="paymentMethod" :value="isDemo ? 'DEMO' : activeTab" />
         <input type="hidden" id="paypalOrderId" name="paypalOrderId" value="" />
 
         <!-- 1. Datos de la Iglesia y del Pastor -->
@@ -67,20 +67,36 @@
             <h2 class="text-sm font-bold text-[#1B365D] uppercase border-b border-gray-100 pb-2 flex items-center">
                 <i class="fa-solid fa-tags text-[#00A8CC] mr-2"></i> 2. Plan Seleccionado
             </h2>
-            <select id="subscriptionPlan" asp-for="SubscriptionPlan" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm font-bold text-[#1B365D] bg-gray-50 focus:ring-2 focus:ring-[#00A8CC]">
+            <select id="subscriptionPlan" asp-for="SubscriptionPlan"
+                    x-on:change="isDemo = ($event.target.value === 'DEMO_30')"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm font-bold text-[#1B365D] bg-gray-50 focus:ring-2 focus:ring-[#00A8CC]">
+                <option value="DEMO_30">Plan Demo — Gratis (30 días de prueba)</option>
                 <option value="SEED">Plan Semilla — $25/mes (Hasta 50 miembros)</option>
                 <option value="MINISTERIAL">Plan Ministerial — $50/mes (Hasta 200 miembros)</option>
                 <option value="CATHEDRAL">Plan Catedral — $100/mes (Hasta 1,000 miembros)</option>
             </select>
         </div>
 
-        <!-- 3. Métodos de Pago Habilitados (Tabs UI) -->
-        <div class="space-y-4">
+        <!-- BANNER INFORMATIVO PARA PLAN DEMO (30 DÍAS GRATIS) -->
+        <div x-show="isDemo" class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-center space-x-3.5 shadow-sm">
+            <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0 shadow">
+                <i class="fa-solid fa-gift text-lg"></i>
+            </div>
+            <div class="text-xs">
+                <h4 class="font-bold text-sm text-emerald-900">¡No se requiere método de pago hoy!</h4>
+                <p class="opacity-90 mt-0.5">
+                    Tu iglesia comenzará inmediatamente con <strong>30 días de acceso completo sin costo</strong>. Podrás regularizar tu suscripción más adelante directamente desde la plataforma.
+                </p>
+            </div>
+        </div>
+
+        <!-- 3. Métodos de Pago Habilitados (Tabs UI - Se oculta si es Demo) -->
+        <div x-show="!isDemo" class="space-y-4" style="display: none;">
             <h2 class="text-sm font-bold text-[#1B365D] uppercase border-b border-gray-100 pb-2 flex items-center">
                 <i class="fa-solid fa-credit-card text-emerald-600 mr-2"></i> 3. Métodos de Pago
             </h2>
 
-            <!-- 3 Pestañas activas (Tarjeta excluida temporalmente) -->
+            <!-- 3 Pestañas activas -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-2 p-1 bg-gray-100 rounded-xl text-xs font-bold">
                 <button type="button"
                         x-on:click="activeTab = 'PAYPAL'"
@@ -142,15 +158,28 @@
             </div>
         </div>
 
-        <button id="submitBtn" type="submit" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-xl shadow-lg transition flex items-center justify-center space-x-2">
-            <i class="fa-solid fa-lock text-xs"></i>
-            <span>Procesar Pago y Registrar Iglesia</span>
+        <!-- Botón Dinámico -->
+        <button id="submitBtn" type="submit"
+                :class="isDemo ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-[#1B365D] hover:bg-[#00A8CC]'"
+                class="w-full py-4 text-white font-black text-sm rounded-xl shadow-lg transition flex items-center justify-center space-x-2">
+            <i class="fa-solid" :class="isDemo ? 'fa-rocket' : 'fa-lock'"></i>
+            <span x-text="isDemo ? 'Comenzar Prueba Gratuita de 30 Días' : 'Procesar Pago y Registrar Iglesia'"></span>
         </button>
     </form>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Verificar el estado inicial del plan seleccionado
+        const planSelect = document.getElementById('subscriptionPlan');
+        if (planSelect && typeof Alpine !== 'undefined') {
+            const currentPlan = planSelect.value;
+            const container = document.querySelector('[x-data]');
+            if (container && container._x_dataStack) {
+                container._x_dataStack[0].isDemo = (currentPlan === 'DEMO_30');
+            }
+        }
+
         if (typeof paypal !== 'undefined') {
             paypal.Buttons({
                 createOrder: function(data, actions) {

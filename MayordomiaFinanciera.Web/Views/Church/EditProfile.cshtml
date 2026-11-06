@@ -1,0 +1,160 @@
+﻿@model MayordomiaFinanciera.Web.Models.Church.ChurchProfileDto
+@{
+    ViewData["Title"] = "Editar Perfil Ministerial";
+    Layout = "_Layout";
+    var church = ViewBag.Church as MayordomiaFinanciera.Web.Models.Church.ChurchDto;
+}
+
+<div class="max-w-4xl mx-auto space-y-8 py-6 px-4 sm:px-6">
+
+    <!-- Encabezado de Edición -->
+    <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="space-y-1">
+            <span class="text-xs font-extrabold uppercase text-[#00A8CC] tracking-widest">Configuración Institucional</span>
+            <h1 class="text-2xl font-black text-[#1B365D]">Actualizar Perfil Ministerial</h1>
+            <p class="text-xs text-gray-500">
+                Esta información estará disponible en tiempo real para todos los miembros asociados a <strong>@(church?.Name ?? "la iglesia")</strong>.
+            </p>
+        </div>
+        <div>
+            <a asp-action="Profile" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition flex items-center space-x-2">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Volver al Perfil</span>
+            </a>
+        </div>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl text-red-700 text-xs space-y-1 shadow-sm">
+            <div class="font-bold flex items-center">
+                <i class="fa-solid fa-triangle-exclamation mr-2 text-sm"></i> Corrige los siguientes errores:
+            </div>
+            @Html.ValidationSummary(false, "", new { @class = "list-disc pl-5" })
+        </div>
+    }
+
+    <!-- Formulario de Edición -->
+    <form asp-action="EditProfile" method="post" class="space-y-6">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="ChurchId" />
+
+        <!-- 1. Información Institucional Básica -->
+        <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-200 space-y-6">
+            <h2 class="text-sm font-black text-[#1B365D] uppercase border-b border-gray-100 pb-2 flex items-center">
+                <i class="fa-solid fa-building-columns text-[#00A8CC] mr-2"></i> 1. Información Institucional y Doctrina
+            </h2>
+
+            <div class="grid grid-cols-1 gap-4 text-xs">
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Denominación o Afiliación (Opcional)</label>
+                    <input type="text" asp-for="Denomination" placeholder="Ej: Asambleas de Dios, Bautista, No Denominacional" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Visión Institucional</label>
+                    <textarea asp-for="Vision" rows="3" placeholder="Describe la visión que guía a tu congregación..." class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]"></textarea>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Misión Ministerial</label>
+                    <textarea asp-for="Mission" rows="3" placeholder="Describe la misión y propósito de la iglesia..." class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Cuerpo Pastoral y Liderazgo -->
+        <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-200 space-y-6">
+            <h2 class="text-sm font-black text-[#1B365D] uppercase border-b border-gray-100 pb-2 flex items-center">
+                <i class="fa-solid fa-user-tie text-[#00A8CC] mr-2"></i> 2. Cuerpo Pastoral y Liderazgo
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Pastor Principal</label>
+                    <input type="text" asp-for="SeniorPastorName" placeholder="Ej: Pr. Juan Pérez" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Esposa / Co-pastora</label>
+                    <input type="text" asp-for="PastorSpouseName" placeholder="Ej: Hna. María de Pérez" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]">
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Co-pastores o Pastores Asociados</label>
+                    <input type="text" asp-for="CoPastors" placeholder="Ej: Pr. Carlos Gómez, Pr. Andrés Ruiz" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]">
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Equipo de Liderazgo / Junta Directiva</label>
+                    <input type="text" asp-for="LeadershipTeam" placeholder="Ej: Diáconos, Tesorería, Líderes de Jóvenes" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]">
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Contacto, Dirección y Horarios -->
+        <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-200 space-y-6">
+            <h2 class="text-sm font-black text-[#1B365D] uppercase border-b border-gray-100 pb-2 flex items-center">
+                <i class="fa-solid fa-map-location-dot text-[#00A8CC] mr-2"></i> 3. Contacto, Sede y Horarios de Cultos
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Teléfono de Contacto</label>
+                    <input type="text" asp-for="Phone" placeholder="Ej: +507 6000-0000" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Correo Electrónico Público</label>
+                    <input type="email" asp-for="PublicEmail" placeholder="contacto@iglesia.org" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]">
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Dirección Física de la Sede</label>
+                    <input type="text" asp-for="Address" placeholder="Ej: Vía Principal, Local 4, La Chorrera, Panamá" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]">
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Horarios de Cultos y Reuniones</label>
+                    <textarea asp-for="ServiceTimes" rows="3" placeholder="Ej: Domingos 10:00 AM - Culto General&#10;Miércoles 7:00 PM - Estudio Bíblico y Oración" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Redes Sociales -->
+        <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-200 space-y-6">
+            <h2 class="text-sm font-black text-[#1B365D] uppercase border-b border-gray-100 pb-2 flex items-center">
+                <i class="fa-solid fa-share-nodes text-[#00A8CC] mr-2"></i> 4. Enlaces y Redes Sociales
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1"><i class="fa-brands fa-facebook text-blue-600 mr-1"></i> Facebook URL</label>
+                    <input type="url" asp-for="SocialFacebook" placeholder="https://facebook.com/tuid" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1"><i class="fa-brands fa-instagram text-pink-600 mr-1"></i> Instagram URL</label>
+                    <input type="url" asp-for="SocialInstagram" placeholder="https://instagram.com/tuid" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1"><i class="fa-brands fa-youtube text-red-600 mr-1"></i> YouTube URL</label>
+                    <input type="url" asp-for="SocialYoutube" placeholder="https://youtube.com/tuiglesia" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#00A8CC]">
+                </div>
+            </div>
+        </div>
+
+        <!-- Botón de Guardado -->
+        <button type="submit" class="w-full py-4 bg-[#1B365D] hover:bg-[#00A8CC] text-white font-black text-sm rounded-2xl shadow-xl transition flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-floppy-disk text-xs"></i>
+            <span>Guardar y Publicar Perfil Ministerial</span>
+        </button>
+    </form>
+</div>
+
+<ElicitationsGroup message="¿Qué módulo o funcionalidad deseas desarrollar a continuación?">
+    <Elicitation label="Construir el Módulo de Voluntariados y Equipos de Servicio" query="Diseña el esquema DTO, repositorio y vistas para administrar los equipos de servicio dominical." />
+    <Elicitation label="Implementar la Gestión de Peticiones de Oración" query="Diseña el flujo de peticiones de oración entre los miembros y los pastores de la iglesia." />
+</ElicitationsGroup>

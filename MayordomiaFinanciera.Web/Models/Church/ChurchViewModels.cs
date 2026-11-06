@@ -10,10 +10,15 @@ namespace MayordomiaFinanciera.Web.Models.Church
         public string? LogoUrl { get; set; }
         public string PrimaryColor { get; set; } = "#1B365D";
         public string SecondaryColor { get; set; } = "#00A8CC";
-        public string SubscriptionPlan { get; set; } = "SEED";
-        public string SubscriptionStatus { get; set; } = "ACTIVE";
+        public string SubscriptionPlan { get; set; } = "DEMO_30";
+        public string SubscriptionStatus { get; set; } = "trial";
         public int MaxMembers { get; set; }
         public string? PaymentReference { get; set; }
+
+        // Propiedades de Trial y Estado de Suscripción
+        public DateTime? TrialEndsAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public bool IsActive { get; set; } = true;
     }
 
     // Configuración Personalizada de Datos de Pago Eclesiales
@@ -39,6 +44,27 @@ namespace MayordomiaFinanciera.Web.Models.Church
         public bool IsAchEnabled { get; set; } = true;
         public bool IsYappyEnabled { get; set; } = true;
         public bool IsPaypalEnabled { get; set; } = true;
+    }
+
+    // Perfil Ministerial Ampliado de la Iglesia (Visible para toda la congregación)
+    public class ChurchProfileDto
+    {
+        public Guid Id { get; set; }
+        public Guid ChurchId { get; set; }
+        public string? Denomination { get; set; }
+        public string? Vision { get; set; }
+        public string? Mission { get; set; }
+        public string? SeniorPastorName { get; set; }
+        public string? PastorSpouseName { get; set; }
+        public string? CoPastors { get; set; }
+        public string? LeadershipTeam { get; set; }
+        public string? Phone { get; set; }
+        public string? PublicEmail { get; set; }
+        public string? Address { get; set; }
+        public string? ServiceTimes { get; set; }
+        public string? SocialFacebook { get; set; }
+        public string? SocialInstagram { get; set; }
+        public string? SocialYoutube { get; set; }
     }
 
     public class JoinChurchRequest

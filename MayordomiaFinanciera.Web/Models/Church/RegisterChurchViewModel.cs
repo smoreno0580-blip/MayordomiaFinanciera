@@ -8,7 +8,9 @@ namespace MayordomiaFinanciera.Web.Models.Church
         public string Slug { get; set; } = string.Empty;
         public string AdminEmail { get; set; } = string.Empty;
         public string AdminPassword { get; set; } = string.Empty;
-        public string SubscriptionPlan { get; set; } = "SEED"; // SEED, MINISTERIAL, CATHEDRAL
+
+        // Planes soportados: DEMO_30, SEED, MINISTERIAL, CATHEDRAL
+        public string SubscriptionPlan { get; set; } = "DEMO_30";
 
         // Propiedades de Pago y Registro Landing
         public string? PaymentReference { get; set; }

@@ -1,0 +1,204 @@
+﻿@model MayordomiaFinanciera.Web.Models.Church.ChurchProfileDto
+@{
+    ViewData["Title"] = "Perfil Ministerial e Institucional";
+    Layout = "_Layout";
+    var church = ViewBag.Church as MayordomiaFinanciera.Web.Models.Church.ChurchDto;
+}
+
+<div class="max-w-5xl mx-auto space-y-8 py-6 px-4 sm:px-6">
+
+    <!-- Encabezado Institucional -->
+    <div class="bg-gradient-to-r from-[#1B365D] to-[#00A8CC] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div class="absolute right-0 top-0 translate-x-8 -translate-y-8 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="flex items-center space-x-5 text-center sm:text-left z-10">
+            <div class="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-black text-3xl shadow-inner shrink-0 text-white border border-white/30">
+                <i class="fa-solid fa-church"></i>
+            </div>
+            <div class="space-y-1">
+                <span class="inline-block px-3 py-1 bg-white/20 rounded-full text-[10px] font-extrabold uppercase tracking-widest text-sky-100">
+                    @(Model.Denomination ?? "Comunidad Ministerial")
+                </span>
+                <h1 class="text-2xl sm:text-3xl font-black">@(church?.Name ?? "Iglesia")</h1>
+                <p class="text-xs text-sky-100 font-mono">Identificador: @(church?.Slug)</p>
+            </div>
+        </div>
+
+        @if (User.IsInRole("Teacher") || User.IsInRole("PASTOR") || User.IsInRole("Admin"))
+        {
+            <div class="z-10">
+                <a asp-action="EditProfile" class="px-5 py-3 bg-white text-[#1B365D] hover:bg-sky-50 font-black text-xs rounded-xl shadow-lg transition flex items-center space-x-2">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Editar Perfil Ministerial</span>
+                </a>
+            </div>
+        }
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-xl text-emerald-800 text-xs flex items-center shadow-sm">
+            <i class="fa-solid fa-circle-check mr-2 text-sm"></i>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl text-red-700 text-xs flex items-center shadow-sm">
+            <i class="fa-solid fa-triangle-exclamation mr-2 text-sm"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    <!-- Cuadrícula Principal de Información -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Columna Izquierda / Central: Visión, Misión y Horarios (2 Columnas en MD) -->
+        <div class="md:col-span-2 space-y-6">
+
+            <!-- Visión y Misión -->
+            <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-200 space-y-6">
+                <div>
+                    <h2 class="text-xs font-black text-[#00A8CC] uppercase tracking-wider mb-2 flex items-center">
+                        <i class="fa-solid fa-eye mr-2"></i> Visión Institucional
+                    </h2>
+                    <p class="text-sm text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                        @(string.IsNullOrWhiteSpace(Model.Vision) ? "La visión de la iglesia no ha sido especificada aún." : Model.Vision)
+                    </p>
+                </div>
+
+                <div>
+                    <h2 class="text-xs font-black text-[#00A8CC] uppercase tracking-wider mb-2 flex items-center">
+                        <i class="fa-solid fa-bullseye mr-2"></i> Misión Ministerial
+                    </h2>
+                    <p class="text-sm text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                        @(string.IsNullOrWhiteSpace(Model.Mission) ? "La misión de la iglesia no ha sido especificada aún." : Model.Mission)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Horarios de Cultos y Reuniones -->
+            <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-200 space-y-3">
+                <h2 class="text-xs font-black text-[#1B365D] uppercase tracking-wider flex items-center border-b border-gray-100 pb-2">
+                    <i class="fa-solid fa-calendar-days text-[#00A8CC] mr-2"></i> Horarios de Cultos y Actividades
+                </h2>
+                <div class="text-sm text-gray-700 whitespace-pre-line bg-sky-50/40 p-4 rounded-2xl border border-sky-100">
+                    @(string.IsNullOrWhiteSpace(Model.ServiceTimes) ? "No se han registrado horarios de cultos públicos." : Model.ServiceTimes)
+                </div>
+            </div>
+
+            <!-- Liderazgo y Co-pastores -->
+            <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-200 space-y-4">
+                <h2 class="text-xs font-black text-[#1B365D] uppercase tracking-wider flex items-center border-b border-gray-100 pb-2">
+                    <i class="fa-solid fa-users-gear text-[#00A8CC] mr-2"></i> Cuerpo Ministerial y Liderazgo
+                </h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div class="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 space-y-1">
+                        <span class="text-gray-400 font-bold uppercase block text-[10px]">Co-pastores</span>
+                        <p class="font-bold text-gray-800">@(string.IsNullOrWhiteSpace(Model.CoPastors) ? "No especificado" : Model.CoPastors)</p>
+                    </div>
+                    <div class="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 space-y-1">
+                        <span class="text-gray-400 font-bold uppercase block text-[10px]">Equipo de Liderazgo</span>
+                        <p class="font-bold text-gray-800">@(string.IsNullOrWhiteSpace(Model.LeadershipTeam) ? "No especificado" : Model.LeadershipTeam)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Liderazgo Pastoral y Contacto -->
+        <div class="space-y-6">
+
+            <!-- Tarjeta de Pastores Principales -->
+            <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-200 space-y-4 text-center">
+                <div class="w-20 h-20 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-[#1B365D] text-2xl font-black shadow-inner border-2 border-[#00A8CC]">
+                    <i class="fa-solid fa-user-tie"></i>
+                </div>
+                <div class="space-y-1">
+                    <span class="text-[10px] font-extrabold text-[#00A8CC] uppercase tracking-wider">Pastor Principal</span>
+                    <h3 class="font-black text-base text-[#1B365D]">@(string.IsNullOrWhiteSpace(Model.SeniorPastorName) ? "Por asignar" : Model.SeniorPastorName)</h3>
+                    @if (!string.IsNullOrWhiteSpace(Model.PastorSpouseName))
+                    {
+                        <p class="text-xs text-gray-500">Esposa / Co-pastora: <strong>@Model.PastorSpouseName</strong></p>
+                    }
+                </div>
+            </div>
+
+            <!-- Información de Contacto e Ubicación -->
+            <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-200 space-y-4">
+                <h2 class="text-xs font-black text-[#1B365D] uppercase tracking-wider border-b border-gray-100 pb-2 flex items-center">
+                    <i class="fa-solid fa-address-book text-[#00A8CC] mr-2"></i> Contacto y Sede
+                </h2>
+
+                <div class="space-y-3 text-xs text-gray-600">
+                    <div class="flex items-start space-x-3">
+                        <i class="fa-solid fa-phone text-[#00A8CC] mt-0.5"></i>
+                        <div>
+                            <strong class="block text-gray-800">Teléfono:</strong>
+                            <span>@(string.IsNullOrWhiteSpace(Model.Phone) ? "No disponible" : Model.Phone)</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-3">
+                        <i class="fa-solid fa-envelope text-[#00A8CC] mt-0.5"></i>
+                        <div>
+                            <strong class="block text-gray-800">Correo Electrónico:</strong>
+                            <span>@(string.IsNullOrWhiteSpace(Model.PublicEmail) ? "No disponible" : Model.PublicEmail)</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-3">
+                        <i class="fa-solid fa-location-dot text-[#00A8CC] mt-0.5"></i>
+                        <div>
+                            <strong class="block text-gray-800">Dirección Física:</strong>
+                            <span>@(string.IsNullOrWhiteSpace(Model.Address) ? "No especificada" : Model.Address)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Redes Sociales -->
+            <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-200 space-y-4">
+                <h2 class="text-xs font-black text-[#1B365D] uppercase tracking-wider border-b border-gray-100 pb-2 flex items-center">
+                    <i class="fa-solid fa-globe text-[#00A8CC] mr-2"></i> Canales y Redes
+                </h2>
+
+                <div class="flex flex-col space-y-2 text-xs font-bold">
+                    @if (!string.IsNullOrWhiteSpace(Model.SocialFacebook))
+                    {
+                        <a href="@Model.SocialFacebook" target="_blank" class="p-3 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition flex items-center space-x-2">
+                            <i class="fa-brands fa-facebook text-base"></i>
+                            <span>Página de Facebook</span>
+                        </a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.SocialInstagram))
+                    {
+                        <a href="@Model.SocialInstagram" target="_blank" class="p-3 bg-pink-50 text-pink-700 rounded-xl hover:bg-pink-100 transition flex items-center space-x-2">
+                            <i class="fa-brands fa-instagram text-base"></i>
+                            <span>Perfil de Instagram</span>
+                        </a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.SocialYoutube))
+                    {
+                        <a href="@Model.SocialYoutube" target="_blank" class="p-3 bg-red-50 text-red-700 rounded-xl hover:bg-red-100 transition flex items-center space-x-2">
+                            <i class="fa-brands fa-youtube text-base"></i>
+                            <span>Canal de YouTube</span>
+                        </a>
+                    }
+                    @if (string.IsNullOrWhiteSpace(Model.SocialFacebook) && string.IsNullOrWhiteSpace(Model.SocialInstagram) && string.IsNullOrWhiteSpace(Model.SocialYoutube))
+                    {
+                        <p class="text-xs text-gray-400 text-center py-2">No hay redes sociales registradas.</p>
+                    }
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<ElicitationsGroup message="¿Qué vista deseas crear ahora para continuar?">
+    <Elicitation label="Generar la vista EditProfile.cshtml (Formulario de Edición del Pastor)" query="Genera el código HTML y Razor para la vista EditProfile.cshtml donde el pastor edita la información institucional." />
+    <Elicitation label="Construir el Módulo de Gestión de Voluntariados" query="Diseña el esquema de datos y las vistas para administrar los equipos de servicio dominical." />
+</ElicitationsGroup>

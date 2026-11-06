@@ -230,7 +230,7 @@
         </div>
     </section>
 
-    <!-- 6. SECCIÓN DE PLANES Y REGISTRO DE IGLESIAS (Unificado) -->
+    <!-- 6. SECCIÓN DE PLANES Y REGISTRO DE IGLESIAS (Unificado: 4 Planes) -->
     <section id="planes-iglesias" class="py-20 bg-gray-50 border-t border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-3xl mx-auto mb-16">
@@ -240,18 +240,43 @@
                 <h2 class="text-3xl font-extrabold text-[#1B365D] mt-3">Planes de Suscripción Ministerial</h2>
                 <div class="w-20 h-1 bg-[#00A8CC] mx-auto my-4 rounded-full"></div>
                 <p class="text-gray-600">
-                    Selecciona el plan ideal para tu congregación y activa el acceso a la plataforma de Mayordomía de forma inmediata.
+                    Selecciona el plan ideal para tu congregación o inicia tu prueba de 30 días sin costo alguno.
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                <!-- Plan Demo (Gratis 30 Días) -->
+                <div class="bg-white p-6 rounded-3xl border-2 border-emerald-500 shadow-lg relative flex flex-col justify-between hover:shadow-xl transition">
+                    <span class="absolute -top-3.5 right-6 bg-emerald-500 text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full shadow">
+                        Prueba Gratis
+                    </span>
+                    <div>
+                        <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider block">Plan Demo</span>
+                        <h3 class="text-3xl font-black text-[#1B365D] mt-2">$0 <span class="text-xs font-normal text-gray-500">/ 30 días</span></h3>
+                        <p class="text-xs text-gray-500 mt-2">Prueba todas las funciones sin tarjeta de crédito ni compromiso.</p>
+                        <ul class="text-xs text-gray-600 space-y-2.5 mt-6">
+                            <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Hasta 20 miembros incluidos</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Acceso a todas las funciones</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Código de invitación activo</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Formaliza tu pago cuando desees</li>
+                        </ul>
+                    </div>
+                    <div class="mt-8">
+                        <a href="@Url.Action("Checkout", "ChurchPublic", new { plan = "DEMO_30" })"
+                           class="block w-full text-center py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl transition shadow">
+                            Probar Gratis 30 Días
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Plan Semilla -->
-                <div class="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm hover:shadow-xl transition flex flex-col justify-between">
+                <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:shadow-xl transition flex flex-col justify-between">
                     <div>
                         <span class="text-xs font-bold text-[#00A8CC] uppercase tracking-wider block">Plan Semilla</span>
-                        <h3 class="text-4xl font-black text-[#1B365D] mt-2">$25 <span class="text-xs font-normal text-gray-500">/ mes</span></h3>
+                        <h3 class="text-3xl font-black text-[#1B365D] mt-2">$25 <span class="text-xs font-normal text-gray-500">/ mes</span></h3>
                         <p class="text-xs text-gray-500 mt-2">Ideal para iglesias pequeñas o misiones emergentes.</p>
-                        <ul class="text-xs text-gray-600 space-y-3 mt-6">
+                        <ul class="text-xs text-gray-600 space-y-2.5 mt-6">
                             <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Hasta 50 miembros incluidos</li>
                             <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Herramientas completas</li>
                             <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Código de invitación único</li>
@@ -259,22 +284,22 @@
                     </div>
                     <div class="mt-8">
                         <a href="@Url.Action("Checkout", "ChurchPublic", new { plan = "SEED" })"
-                           class="block w-full text-center py-3.5 px-4 bg-[#1B365D] hover:bg-[#00A8CC] text-white font-bold text-xs rounded-xl transition shadow">
-                            Registrar Iglesia ($25/mes)
+                           class="block w-full text-center py-3 px-4 bg-[#1B365D] hover:bg-[#00A8CC] text-white font-bold text-xs rounded-xl transition shadow">
+                            Registrar ($25/mes)
                         </a>
                     </div>
                 </div>
 
                 <!-- Plan Ministerial - Recomendado -->
-                <div class="bg-white p-8 rounded-3xl border-2 border-[#00A8CC] shadow-xl relative flex flex-col justify-between transform md:-translate-y-2">
+                <div class="bg-white p-6 rounded-3xl border-2 border-[#00A8CC] shadow-xl relative flex flex-col justify-between transform lg:-translate-y-2">
                     <span class="absolute -top-3.5 right-6 bg-[#00A8CC] text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full shadow">
                         Recomendado
                     </span>
                     <div>
                         <span class="text-xs font-bold text-[#00A8CC] uppercase tracking-wider block">Plan Ministerial</span>
-                        <h3 class="text-4xl font-black text-[#1B365D] mt-2">$50 <span class="text-xs font-normal text-gray-500">/ mes</span></h3>
+                        <h3 class="text-3xl font-black text-[#1B365D] mt-2">$50 <span class="text-xs font-normal text-gray-500">/ mes</span></h3>
                         <p class="text-xs text-gray-500 mt-2">Para congregaciones medianas en crecimiento.</p>
-                        <ul class="text-xs text-gray-600 space-y-3 mt-6">
+                        <ul class="text-xs text-gray-600 space-y-2.5 mt-6">
                             <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Hasta 200 miembros incluidos</li>
                             <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Reportes ejecutivos consolidados</li>
                             <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Módulos pastorales avanzados</li>
@@ -282,19 +307,19 @@
                     </div>
                     <div class="mt-8">
                         <a href="@Url.Action("Checkout", "ChurchPublic", new { plan = "MINISTERIAL" })"
-                           class="block w-full text-center py-3.5 px-4 bg-[#00A8CC] hover:bg-[#0090B0] text-white font-black text-xs rounded-xl transition shadow-lg">
-                            Registrar mi Iglesia ($50/mes)
+                           class="block w-full text-center py-3 px-4 bg-[#00A8CC] hover:bg-[#0090B0] text-white font-black text-xs rounded-xl transition shadow-lg">
+                            Registrar ($50/mes)
                         </a>
                     </div>
                 </div>
 
                 <!-- Plan Catedral -->
-                <div class="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm hover:shadow-xl transition flex flex-col justify-between">
+                <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:shadow-xl transition flex flex-col justify-between">
                     <div>
                         <span class="text-xs font-bold text-[#00A8CC] uppercase tracking-wider block">Plan Catedral</span>
-                        <h3 class="text-4xl font-black text-[#1B365D] mt-2">$100 <span class="text-xs font-normal text-gray-500">/ mes</span></h3>
+                        <h3 class="text-3xl font-black text-[#1B365D] mt-2">$100 <span class="text-xs font-normal text-gray-500">/ mes</span></h3>
                         <p class="text-xs text-gray-500 mt-2">Para megaiglesias o múltiples sedes.</p>
-                        <ul class="text-xs text-gray-600 space-y-3 mt-6">
+                        <ul class="text-xs text-gray-600 space-y-2.5 mt-6">
                             <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Hasta 1,000 miembros incluidos</li>
                             <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Múltiples administradores</li>
                             <li class="flex items-center"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Soporte prioritario</li>
@@ -302,11 +327,12 @@
                     </div>
                     <div class="mt-8">
                         <a href="@Url.Action("Checkout", "ChurchPublic", new { plan = "CATHEDRAL" })"
-                           class="block w-full text-center py-3.5 px-4 bg-[#1B365D] hover:bg-[#00A8CC] text-white font-bold text-xs rounded-xl transition shadow">
-                            Registrar Iglesia ($100/mes)
+                           class="block w-full text-center py-3 px-4 bg-[#1B365D] hover:bg-[#00A8CC] text-white font-bold text-xs rounded-xl transition shadow">
+                            Registrar ($100/mes)
                         </a>
                     </div>
                 </div>
+
             </div>
         </div>
     </section>

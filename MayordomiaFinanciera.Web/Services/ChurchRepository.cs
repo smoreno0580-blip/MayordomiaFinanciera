@@ -18,17 +18,88 @@ namespace MayordomiaFinanciera.Web.Services
         Task<Guid> RegisterNewChurchAndAdminAsync(RegisterChurchViewModel model, string initialStatus = "ACTIVE");
         Task<IEnumerable<dynamic>> GetMembersByChurchIdAsync(Guid churchId);
         Task<IEnumerable<dynamic>> GetInvitationCodesByChurchIdAsync(Guid churchId);
-                Task ActivateChurchAsync(Guid churchId);
+        Task ActivateChurchAsync(Guid churchId);
+        Task DeactivateChurchAsync(Guid churchId);
+        Task ConfirmPaymentAndActivateAsync(Guid churchId, string newPlan);
         Task<IEnumerable<ChurchDto>> GetAllChurchesAsync();
-        // Nuevos métodos para configuración de pagos por iglesia:
+
+        // Métodos para configuración de pagos por iglesia:
         Task<ChurchPaymentSettingsDto?> GetPaymentSettingsByChurchIdAsync(Guid churchId);
         Task SavePaymentSettingsAsync(ChurchPaymentSettingsDto settings);
         Task<GlobalPaymentSettingsDto> GetGlobalPaymentSettingsAsync();
+
+        // Nuevos métodos para Perfil Ministerial Ampliado:
+        Task<ChurchProfileDto?> GetChurchProfileAsync(Guid churchId);
+        Task SaveChurchProfileAsync(ChurchProfileDto profile);
+        Task<IEnumerable<VolunteerTeamDto>> GetVolunteerTeamsAsync(Guid churchId);
+        Task<VolunteerTeamDto?> GetVolunteerTeamByIdAsync(Guid teamId);
+        Task CreateVolunteerTeamAsync(VolunteerTeamDto team);
+        Task AddVolunteerMemberAsync(VolunteerMemberDto member);
+        Task RemoveVolunteerMemberAsync(Guid memberId);
     }
 
     public class ChurchRepository : IChurchRepository
     {
         private readonly string _connectionString;
+
+        public async Task<IEnumerable<VolunteerTeamDto>> GetVolunteerTeamsAsync(Guid churchId)
+        {
+            using var connection = CreateConnection();
+            string sql = @"
+        SELECT t.id, t.church_id AS ChurchId, t.name, t.description, t.leader_name AS LeaderName,
+               (SELECT COUNT(*) FROM church_volunteer_members m WHERE m.team_id = t.id) AS MemberCount
+        FROM church_volunteer_teams t
+        WHERE t.church_id = @ChurchId
+        ORDER BY t.name ASC;";
+            return await connection.QueryAsync<VolunteerTeamDto>(sql, new { ChurchId = churchId });
+        }
+
+        public async Task<VolunteerTeamDto?> GetVolunteerTeamByIdAsync(Guid teamId)
+        {
+            using var connection = CreateConnection();
+            string teamSql = "SELECT id, church_id AS ChurchId, name, description, leader_name AS LeaderName FROM church_volunteer_teams WHERE id = @TeamId;";
+            var team = await connection.QueryFirstOrDefaultAsync<VolunteerTeamDto>(teamSql, new { TeamId = teamId });
+
+            if (team != null)
+            {
+                string membersSql = "SELECT id, team_id AS TeamId, user_id AS UserId, member_name AS MemberName, member_email AS MemberEmail, role_in_team AS RoleInTeam FROM church_volunteer_members WHERE team_id = @TeamId;";
+                var members = await connection.QueryAsync<VolunteerMemberDto>(membersSql, new { TeamId = teamId });
+                team.Members = members.AsList();
+            }
+            return team;
+        }
+
+        public async Task CreateVolunteerTeamAsync(VolunteerTeamDto team)
+        {
+            using var connection = CreateConnection();
+            string sql = @"
+        INSERT INTO church_volunteer_teams (church_id, name, description, leader_name)
+        VALUES (@ChurchId, @Name, @Description, @LeaderName);";
+            await connection.ExecuteAsync(sql, team);
+        }
+
+        public async Task AddVolunteerMemberAsync(VolunteerMemberDto member)
+        {
+            using var connection = CreateConnection();
+            string sql = @"
+        INSERT INTO church_volunteer_members (team_id, user_id, member_name, member_email, role_in_team)
+        VALUES (@TeamId, @UserId, @MemberName, @MemberEmail, @RoleInTeam);";
+            await connection.ExecuteAsync(sql, member);
+        }
+
+        public async Task RemoveVolunteerMemberAsync(Guid memberId)
+        {
+            using var connection = CreateConnection();
+            string sql = "DELETE FROM church_volunteer_members WHERE id = @MemberId;";
+            await connection.ExecuteAsync(sql, new { MemberId = memberId });
+        }
+        public ChurchRepository(IConfiguration configuration)
+        {
+            _connectionString = configuration.GetConnectionString("DefaultConnection")
+                ?? throw new ArgumentNullException(nameof(configuration));
+        }
+
+        private IDbConnection CreateConnection() => new NpgsqlConnection(_connectionString);
 
         public async Task<IEnumerable<ChurchDto>> GetAllChurchesAsync()
         {
@@ -42,7 +113,8 @@ namespace MayordomiaFinanciera.Web.Services
 
             return await connection.QueryAsync<ChurchDto>(sql);
         }
-                public async Task ActivateChurchAsync(Guid churchId)
+
+        public async Task ActivateChurchAsync(Guid churchId)
         {
             using var connection = CreateConnection();
             string sql = @"
@@ -54,13 +126,30 @@ namespace MayordomiaFinanciera.Web.Services
             await connection.ExecuteAsync(sql, new { ChurchId = churchId });
         }
 
-        public ChurchRepository(IConfiguration configuration)
+        public async Task DeactivateChurchAsync(Guid churchId)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new ArgumentNullException(nameof(configuration));
+            using var connection = CreateConnection();
+            string sql = @"
+        UPDATE churches 
+        SET subscription_status = 'EXPIRED', 
+            updated_at = CURRENT_TIMESTAMP 
+        WHERE id = @ChurchId;";
+
+            await connection.ExecuteAsync(sql, new { ChurchId = churchId });
         }
 
-        private IDbConnection CreateConnection() => new NpgsqlConnection(_connectionString);
+        public async Task ConfirmPaymentAndActivateAsync(Guid churchId, string newPlan)
+        {
+            using var connection = CreateConnection();
+            string sql = @"
+        UPDATE churches 
+        SET subscription_plan = @Plan, 
+            subscription_status = 'ACTIVE', 
+            updated_at = CURRENT_TIMESTAMP 
+        WHERE id = @ChurchId;";
+
+            await connection.ExecuteAsync(sql, new { Plan = newPlan, ChurchId = churchId });
+        }
 
         public async Task<ChurchDto?> GetChurchByIdAsync(Guid churchId)
         {
@@ -79,12 +168,12 @@ namespace MayordomiaFinanciera.Web.Services
         {
             using var connection = CreateConnection();
             string sql = @"
-                SELECT c.id, c.name, c.slug, c.logo_url AS LogoUrl, c.primary_color AS PrimaryColor,
-                       c.secondary_color AS SecondaryColor, c.subscription_plan AS SubscriptionPlan,
-                       c.subscription_status AS SubscriptionStatus, c.max_members AS MaxMembers
-                FROM users u
-                INNER JOIN churches c ON u.church_id = c.id
-                WHERE u.id = @UserId;";
+        SELECT c.id, c.name, c.slug, c.logo_url AS LogoUrl, c.primary_color AS PrimaryColor,
+               c.secondary_color AS SecondaryColor, c.subscription_plan AS SubscriptionPlan,
+               c.subscription_status AS SubscriptionStatus, c.max_members AS MaxMembers
+        FROM users u
+        LEFT JOIN churches c ON u.church_id = c.id
+        WHERE u.id = @UserId;";
 
             return await connection.QueryFirstOrDefaultAsync<ChurchDto>(sql, new { UserId = userId });
         }
@@ -152,7 +241,6 @@ namespace MayordomiaFinanciera.Web.Services
             {
                 int maxMembers = model.SubscriptionPlan == "CATHEDRAL" ? 1000 : (model.SubscriptionPlan == "MINISTERIAL" ? 200 : 50);
 
-                // Se inserta respetando el initialStatus (PENDING_VERIFICATION o ACTIVE)
                 string insertChurchSql = @"
             INSERT INTO churches (name, slug, subscription_plan, subscription_status, max_members, payment_reference, created_by_landing)
             VALUES (@Name, @Slug, @Plan, @Status, @MaxMembers, @PaymentReference, @CreatedByLanding)
@@ -286,6 +374,50 @@ namespace MayordomiaFinanciera.Web.Services
             updated_at = CURRENT_TIMESTAMP;";
 
             await connection.ExecuteAsync(sql, settings);
+        }
+
+        // Implementación de métodos para el Perfil Ministerial
+        public async Task<ChurchProfileDto?> GetChurchProfileAsync(Guid churchId)
+        {
+            using var connection = CreateConnection();
+            string sql = @"
+        SELECT id, church_id AS ChurchId, denomination, vision, mission,
+               senior_pastor_name AS SeniorPastorName, pastor_spouse_name AS PastorSpouseName,
+               co_pastors AS CoPastors, leadership_team AS LeadershipTeam,
+               phone, public_email AS PublicEmail, address, service_times AS ServiceTimes,
+               social_facebook AS SocialFacebook, social_instagram AS SocialInstagram, social_youtube AS SocialYoutube
+        FROM church_profiles
+        WHERE church_id = @ChurchId;";
+
+            return await connection.QueryFirstOrDefaultAsync<ChurchProfileDto>(sql, new { ChurchId = churchId });
+        }
+
+        public async Task SaveChurchProfileAsync(ChurchProfileDto profile)
+        {
+            using var connection = CreateConnection();
+            string sql = @"
+        INSERT INTO church_profiles 
+            (church_id, denomination, vision, mission, senior_pastor_name, pastor_spouse_name, co_pastors, leadership_team, phone, public_email, address, service_times, social_facebook, social_instagram, social_youtube, updated_at)
+        VALUES 
+            (@ChurchId, @Denomination, @Vision, @Mission, @SeniorPastorName, @PastorSpouseName, @CoPastors, @LeadershipTeam, @Phone, @PublicEmail, @Address, @ServiceTimes, @SocialFacebook, @SocialInstagram, @SocialYoutube, CURRENT_TIMESTAMP)
+        ON CONFLICT (church_id) DO UPDATE SET
+            denomination = EXCLUDED.denomination,
+            vision = EXCLUDED.vision,
+            mission = EXCLUDED.mission,
+            senior_pastor_name = EXCLUDED.senior_pastor_name,
+            pastor_spouse_name = EXCLUDED.pastor_spouse_name,
+            co_pastors = EXCLUDED.co_pastors,
+            leadership_team = EXCLUDED.leadership_team,
+            phone = EXCLUDED.phone,
+            public_email = EXCLUDED.public_email,
+            address = EXCLUDED.address,
+            service_times = EXCLUDED.service_times,
+            social_facebook = EXCLUDED.social_facebook,
+            social_instagram = EXCLUDED.social_instagram,
+            social_youtube = EXCLUDED.social_youtube,
+            updated_at = CURRENT_TIMESTAMP;";
+
+            await connection.ExecuteAsync(sql, profile);
         }
     }
 }

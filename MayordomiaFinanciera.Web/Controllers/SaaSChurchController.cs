@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MayordomiaFinanciera.Web.Controllers
 {
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "admin,ADMIN")]
     public class SaaSChurchController : Controller
     {
         private readonly IChurchRepository _churchRepository;
@@ -18,16 +18,28 @@ namespace MayordomiaFinanciera.Web.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Register()
+        public async Task<IActionResult> Register(string plan = "DEMO_30")
         {
             ViewBag.Churches = await _churchRepository.GetAllChurchesAsync();
-            return View(new RegisterChurchViewModel());
+
+            // Recibimos el parámetro de la landing page y lo asignamos a SubscriptionPlan
+            var model = new RegisterChurchViewModel
+            {
+                SubscriptionPlan = string.IsNullOrWhiteSpace(plan) ? "DEMO_30" : plan.ToUpper()
+            };
+
+            return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterChurchViewModel model)
         {
+            if (string.IsNullOrWhiteSpace(model.SubscriptionPlan))
+            {
+                model.SubscriptionPlan = "DEMO_30";
+            }
+
             if (!ModelState.IsValid)
             {
                 ViewBag.Churches = await _churchRepository.GetAllChurchesAsync();
@@ -37,7 +49,16 @@ namespace MayordomiaFinanciera.Web.Controllers
             try
             {
                 await _churchRepository.RegisterNewChurchAndAdminAsync(model);
-                TempData["SuccessMessage"] = "¡Iglesia registrada exitosamente!";
+
+                if (model.SubscriptionPlan == "DEMO_30")
+                {
+                    TempData["SuccessMessage"] = "¡Iglesia registrada exitosamente bajo el Plan Demo por 30 días! Ya puedes iniciar sesión.";
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = "¡Iglesia registrada exitosamente! Pendiente de activación por pago.";
+                }
+
                 return RedirectToAction("Register");
             }
             catch (Exception ex)
@@ -48,21 +69,36 @@ namespace MayordomiaFinanciera.Web.Controllers
             }
         }
 
-        [Authorize(Roles = "admin,ADMIN")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ActivateChurch(Guid churchId)
         {
             try
             {
-                // Ejecución limpia a través de la interfaz encapsulada del repositorio
                 await _churchRepository.ActivateChurchAsync(churchId);
-
                 TempData["SuccessMessage"] = "¡La iglesia ha sido activada exitosamente! El pastor ya puede iniciar sesión en la plataforma.";
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"Error al activar la iglesia: {ex.Message}";
+            }
+
+            return RedirectToAction("Register");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmPaymentAndActivate(Guid churchId, string newPlan)
+        {
+            try
+            {
+                // Método para actualizar el plan, limpiar la fecha de trial, marcar activo y remover la baja por vencimiento
+                await _churchRepository.ConfirmPaymentAndActivateAsync(churchId, newPlan);
+                TempData["SuccessMessage"] = "¡Pago validado y suscripción activada exitosamente con el nuevo plan!";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Error al confirmar el pago y activar la iglesia: {ex.Message}";
             }
 
             return RedirectToAction("Register");

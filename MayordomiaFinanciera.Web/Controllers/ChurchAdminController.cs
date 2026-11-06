@@ -37,6 +37,43 @@ namespace MayordomiaFinanciera.Web.Controllers
                 return RedirectToAction("Index", "Dashboard");
             }
 
+            // 1. Evaluación del Plan Demo (30 Días) y Estado de Suscripción
+            string plan = church.SubscriptionPlan ?? "DEMO_30";
+            string status = church.SubscriptionStatus ?? "trial";
+            bool isActive = church.IsActive;
+
+            // Si la iglesia fue dada de baja previa o manualmente
+            if (!isActive || status.Equals("expired", StringComparison.OrdinalIgnoreCase))
+            {
+                return View("SubscriptionExpired", church);
+            }
+
+            // Si está en periodo de prueba Demo
+            if (plan.Equals("DEMO_30", StringComparison.OrdinalIgnoreCase) && status.Equals("trial", StringComparison.OrdinalIgnoreCase))
+            {
+                DateTime trialEndsAt = church.TrialEndsAt ?? church.CreatedAt.AddDays(30);
+                TimeSpan remainingTime = trialEndsAt - DateTime.UtcNow;
+
+                if (remainingTime.TotalSeconds <= 0)
+                {
+                    // Dar de baja automáticamente por vencimiento
+                    await _churchRepository.DeactivateChurchAsync(church.Id);
+                    church.IsActive = false;
+                    church.SubscriptionStatus = "expired";
+
+                    return View("SubscriptionExpired", church);
+                }
+
+                ViewBag.IsTrial = true;
+                ViewBag.RemainingDays = Math.Max(0, (int)Math.Ceiling(remainingTime.TotalDays));
+                ViewBag.RemainingHours = Math.Max(0, (int)remainingTime.TotalHours);
+            }
+            else
+            {
+                ViewBag.IsTrial = false;
+            }
+
+            // 2. Carga de Miembros y Códigos de Invitación
             var members = await _churchRepository.GetMembersByChurchIdAsync(church.Id);
             var invitationCodes = await _churchRepository.GetInvitationCodesByChurchIdAsync(church.Id);
 
@@ -50,7 +87,7 @@ namespace MayordomiaFinanciera.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> PaymentSettings()
         {
-            Guid churchId = GetCurrentChurchId(); // Método helper que obtiene la iglesia del Claim actual
+            Guid churchId = GetCurrentChurchId();
             var settings = await _churchRepository.GetPaymentSettingsByChurchIdAsync(churchId);
             return View(settings ?? new ChurchPaymentSettingsDto { ChurchId = churchId });
         }
@@ -70,7 +107,6 @@ namespace MayordomiaFinanciera.Web.Controllers
 
         private Guid GetCurrentChurchId()
         {
-            // 1. Intentar leer desde la Claim de la cookie de autenticación
             var churchClaim = User.FindFirst("ChurchId")?.Value ?? User.FindFirst("church_id")?.Value;
 
             if (!string.IsNullOrEmpty(churchClaim) && Guid.TryParse(churchClaim, out Guid churchId))
@@ -78,16 +114,13 @@ namespace MayordomiaFinanciera.Web.Controllers
                 return churchId;
             }
 
-            // 2. Si no viene en los claims pero el usuario es admin o se almacena en el ID de usuario:
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out Guid parsedUserId))
             {
-                // De ser necesario, se puede hacer fallback o retornar Guid por defecto
                 return parsedUserId;
             }
 
             throw new InvalidOperationException("No se encontró la iglesia asociada al usuario autenticado.");
         }
-        
     }
 }

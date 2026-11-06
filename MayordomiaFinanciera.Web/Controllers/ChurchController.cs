@@ -183,5 +183,93 @@ namespace MayordomiaFinanciera.Web.Controllers
                 return BadRequest($"Error al generar el informe: {ex.Message}");
             }
         }
+
+        // ==========================================
+        // NUEVOS MÉTODOS: PERFIL MINISTERIAL E INSTITUCIONAL
+        // ==========================================
+
+        [HttpGet]
+        public async Task<IActionResult> Profile()
+        {
+            try
+            {
+                Guid userId = GetCurrentUserId();
+                var church = await _churchRepository.GetChurchByUserIdAsync(userId);
+
+                if (church == null)
+                {
+                    TempData["ErrorMessage"] = "No estás vinculado a ninguna iglesia activa.";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                var profile = await _churchRepository.GetChurchProfileAsync(church.Id)
+                              ?? new ChurchProfileDto { ChurchId = church.Id };
+
+                ViewBag.Church = church;
+                return View(profile);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Error al cargar el perfil: {ex.Message}";
+                return RedirectToAction("Index", "Home");
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> EditProfile()
+        {
+            try
+            {
+                Guid userId = GetCurrentUserId();
+                var church = await _churchRepository.GetChurchByUserIdAsync(userId);
+
+                if (church == null)
+                {
+                    return RedirectToAction("Index", "Home");
+                }
+
+                var profile = await _churchRepository.GetChurchProfileAsync(church.Id)
+                              ?? new ChurchProfileDto { ChurchId = church.Id };
+
+                ViewBag.Church = church;
+                return View(profile);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Error al cargar la configuración: {ex.Message}";
+                return RedirectToAction("Profile");
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditProfile(ChurchProfileDto model)
+        {
+            try
+            {
+                Guid userId = GetCurrentUserId();
+                var church = await _churchRepository.GetChurchByUserIdAsync(userId);
+
+                if (church == null || church.Id != model.ChurchId)
+                {
+                    return Unauthorized();
+                }
+
+                await _churchRepository.SaveChurchProfileAsync(model);
+                TempData["SuccessMessage"] = "¡Perfil ministerial e institucional actualizado exitosamente!";
+                return RedirectToAction("Profile");
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Error al guardar el perfil: {ex.Message}");
+
+                // CORRECCIÓN AQUÍ: Usamos 'church' en lugar de 'tuiglesia'
+                Guid userIdForChurch = GetCurrentUserId();
+                var church = await _churchRepository.GetChurchByUserIdAsync(userIdForChurch);
+                ViewBag.Church = church;
+
+                return View(model);
+            }
+        }
     }
 }
