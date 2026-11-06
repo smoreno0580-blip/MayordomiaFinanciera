@@ -244,9 +244,16 @@
                     <div class="flex items-center space-x-2 sm:space-x-3 shrink-0">
                         @if (User.Identity != null && User.Identity.IsAuthenticated)
                         {
+                            <!-- Botón Unirme a mi Iglesia -->
                             <button type="button" onclick="openJoinChurchModal()" class="px-2.5 py-1.5 rounded-lg bg-[#00A8CC]/20 hover:bg-[#00A8CC]/30 text-[#00A8CC] transition-all text-xs font-bold flex items-center space-x-1" title="Vincularme a mi iglesia">
                                 <i class="fa-solid fa-church text-xs"></i>
                                 <span class="hidden md:inline">Unirme a Iglesia</span>
+                            </button>
+
+                            <!-- Botón Desvincularme de mi Iglesia -->
+                            <button type="button" onclick="openLeaveChurchModal()" class="px-2.5 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 transition-all text-xs font-bold flex items-center space-x-1 border border-red-500/30" title="Desvincularme de mi iglesia actual">
+                                <i class="fa-solid fa-house-chimney-crack text-xs"></i>
+                                <span class="hidden md:inline">Salir de Iglesia</span>
                             </button>
 
                             <div class="text-right hidden sm:block leading-tight">
@@ -290,9 +297,10 @@
         </main>
     </div>
 
-    <!-- Modal Cambio de Contraseña -->
+    <!-- Modales -->
     @if (User.Identity != null && User.Identity.IsAuthenticated)
     {
+        <!-- Modal Cambio de Contraseña -->
         <div id="changePasswordModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
                 <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
@@ -345,6 +353,25 @@
                 </form>
             </div>
         </div>
+
+        <!-- Modal Confirmación de Desvinculación de Iglesia -->
+        <div id="leaveChurchModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-gray-800">
+                <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
+                    <h3 class="text-base font-bold text-red-600 flex items-center">
+                        <i class="fa-solid fa-house-chimney-crack text-red-500 mr-2"></i> Salir de la Iglesia
+                    </h3>
+                    <button type="button" onclick="closeLeaveChurchModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <p class="text-xs text-gray-600 mb-4">
+                    ¿Estás seguro de que deseas desvincularte de tu iglesia actual? Perderás el acceso a las funciones avanzadas exclusivas de la congregación, pero podrás volver a vincularte en cualquier momento con un código de invitación.
+                </p>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeLeaveChurchModal()" class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold">Cancelar</button>
+                    <button type="button" onclick="submitLeaveChurch()" class="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition shadow">Desvincularme</button>
+                </div>
+            </div>
+        </div>
     }
 
     <!-- Toast y Funciones JS -->
@@ -385,6 +412,14 @@
             document.getElementById('joinChurchModal').classList.add('hidden');
         }
 
+        function openLeaveChurchModal() {
+            document.getElementById('leaveChurchModal').classList.remove('hidden');
+        }
+
+        function closeLeaveChurchModal() {
+            document.getElementById('leaveChurchModal').classList.add('hidden');
+        }
+
         async function submitJoinChurchCode(e) {
             e.preventDefault();
             const code = document.getElementById('church-invite-code').value;
@@ -407,6 +442,31 @@
                 }
             } catch (err) {
                 showToast('Error de conexión.', 'error');
+            }
+        }
+
+        async function submitLeaveChurch() {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            try {
+                const response = await fetch('/Church/LeaveChurch', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    }
+                });
+
+                const res = await response.json();
+                if (res.success) {
+                    showToast(res.message, 'success');
+                    closeLeaveChurchModal();
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast(res.message, 'error');
+                }
+            } catch (err) {
+                showToast('Error de conexión al desvincularse.', 'error');
             }
         }
     </script>

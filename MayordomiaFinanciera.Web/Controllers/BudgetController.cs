@@ -70,24 +70,39 @@ namespace MayordomiaFinanciera.Web.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetComparison(int year, int month)
+        public async Task<IActionResult> GetComparison([FromQuery] int year, [FromQuery] int month)
         {
-            Guid userId = GetCurrentUserId();
-
-            // Validar límites del Plan Gratuito B2C
-            bool isAllowed = await _subscriptionPolicy.CanAccessAdvancedFeaturesAsync(userId);
-            if (!isAllowed)
+            try
             {
-                return Json(new
-                {
-                    success = false,
-                    isRestricted = true,
-                    message = "El comparativo histórico avanzado requiere pertenecer a una iglesia con suscripción activa."
-                });
-            }
+                Guid userId = GetCurrentUserId();
 
-            var comparison = await _budgetRepository.GetMonthlyComparisonAsync(userId, year, month);
-            return Json(new { success = true, data = comparison });
+                // 1. Validar si el usuario en sesión es Administrador / SuperAdmin
+                bool isPlatformAdmin = User.IsInRole("ADMIN") || User.IsInRole("admin") ||
+                                       User.IsInRole("SuperAdmin") || User.IsInRole("SUPERADMIN") ||
+                                       User.Identity?.Name?.Contains("admin") == true;
+
+                // 2. Si no es Admin, validar límites del Plan B2C / Suscripción Ministerial
+                if (!isPlatformAdmin)
+                {
+                    bool isAllowed = await _subscriptionPolicy.CanAccessAdvancedFeaturesAsync(userId);
+                    if (!isAllowed)
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            isRestricted = true,
+                            message = "El comparativo histórico avanzado requiere pertenecer a una iglesia con suscripción activa."
+                        });
+                    }
+                }
+
+                var comparison = await _budgetRepository.GetMonthlyComparisonAsync(userId, year, month);
+                return Json(new { success = true, data = comparison });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error al cargar el comparativo: {ex.Message}" });
+            }
         }
     }
 }

@@ -86,4 +86,20 @@
         </div>
 
     </div>
+
+    <!-- Banner / Herramienta de Exportación de Miembros Desvinculados -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h4 class="text-sm font-extrabold text-[#1B365D] flex items-center">
+                <i class="fa-solid fa-file-csv text-[#00A8CC] mr-2"></i> Reporte de Movimiento de Membresía
+            </h4>
+            <p class="text-xs text-gray-500 mt-0.5">
+                Descarga el informe en formato CSV con el registro histórico de los usuarios que han desvinculado voluntariamente su cuenta de la congregación.
+            </p>
+        </div>
+        <a href="@Url.Action("ExportLeavesReportCsv", "Church")" class="px-4 py-2.5 bg-[#1B365D] text-white hover:bg-[#00A8CC] transition-all rounded-xl text-xs font-bold flex items-center space-x-2 shadow shrink-0">
+            <i class="fa-solid fa-file-arrow-down text-sm"></i>
+            <span>Exportar CSV de Desvinculados</span>
+        </a>
+    </div>
 </div>

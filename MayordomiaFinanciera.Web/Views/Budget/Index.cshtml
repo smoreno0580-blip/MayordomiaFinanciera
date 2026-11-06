@@ -427,6 +427,9 @@
                             </td>
                         </tr>
                     `).join('');
+                } else {
+                    // Si el servidor responde con un error controlado (ej. restricciones de suscripción)
+                    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-amber-600 font-semibold text-xs">${res.message || 'No hay datos disponibles para mostrar.'}</td></tr>`;
                 }
             } catch (err) {
                 tbody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-red-500">Error al obtener el comparativo.</td></tr>';
