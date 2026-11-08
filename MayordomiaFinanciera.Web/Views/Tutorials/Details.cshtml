@@ -1,0 +1,106 @@
+﻿@model MayordomiaFinanciera.Web.Models.Tutorials.PlatformTutorialDto
+@{
+    ViewData["Title"] = Model.Title;
+    Layout = "_Layout";
+
+    // Función auxiliar para convertir URLs de YouTube a formato Embed seguro
+    string GetYouTubeEmbedUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return string.Empty;
+
+        if (url.Contains("watch?v="))
+        {
+            return url.Replace("watch?v=", "embed/");
+        }
+        if (url.Contains("youtu.be/"))
+        {
+            return url.Replace("youtu.be/", "www.youtube.com/embed/");
+        }
+        return url;
+    }
+
+    var embedUrl = GetYouTubeEmbedUrl(Model.YoutubeUrl ?? "");
+}
+
+<div class="max-w-4xl mx-auto space-y-8 py-6 px-4 sm:px-6">
+
+    <!-- Navegación Superior -->
+    <div class="flex items-center justify-between">
+        <a asp-action="Index" class="inline-flex items-center space-x-2 text-xs font-bold text-[#00A8CC] hover:text-[#1B365D] transition bg-sky-50 px-3.5 py-2 rounded-xl">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Volver al Centro de Ayuda</span>
+        </a>
+        <span class="px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full text-[10px] font-black uppercase tracking-wider">
+            Categoría: @Model.Category
+        </span>
+    </div>
+
+    <!-- Encabezado de la Guía -->
+    <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-200 space-y-3">
+        <div class="flex items-center space-x-3 text-[#00A8CC]">
+            <div class="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center text-lg font-bold">
+                <i class="@Model.IconClass"></i>
+            </div>
+            <span class="text-xs font-black uppercase tracking-wider">Guía Interactiva</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black text-[#1B365D]">@Model.Title</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Description))
+        {
+            <p class="text-xs sm:text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
+                @Model.Description
+            </p>
+        }
+    </div>
+
+    <!-- Reproductor de Videotutorial (Si existe enlace de YouTube) -->
+    @if (!string.IsNullOrWhiteSpace(embedUrl))
+    {
+        <div class="bg-white p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-200 space-y-3">
+            <h2 class="text-xs font-black text-[#1B365D] uppercase tracking-wider flex items-center">
+                <i class="fa-brands fa-youtube text-red-500 text-base mr-2"></i> Videotutorial Explicativo
+            </h2>
+            <div class="relative w-full overflow-hidden rounded-2xl shadow-md border border-gray-100" style="padding-top: 56.25%;">
+                <iframe class="absolute top-0 left-0 w-full h-full rounded-2xl"
+                        src="@embedUrl"
+                        title="@Model.Title"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen>
+                </iframe>
+            </div>
+        </div>
+    }
+
+    <!-- Contenido Guía Paso a Paso -->
+    <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-gray-200 space-y-6">
+        <h2 class="text-xs font-black text-[#1B365D] uppercase tracking-wider border-b border-gray-100 pb-3 flex items-center">
+            <i class="fa-solid fa-list-check text-[#00A8CC] text-sm mr-2"></i> Instrucciones Paso a Paso
+        </h2>
+
+        @if (!string.IsNullOrWhiteSpace(Model.StepByStepContent))
+        {
+            <div class="prose prose-sm max-w-none text-gray-700 space-y-4 text-xs sm:text-sm leading-relaxed">
+                @Html.Raw(Model.StepByStepContent)
+            </div>
+        }
+        else
+        {
+            <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 text-center space-y-2">
+                <i class="fa-solid fa-circle-info text-2xl text-[#00A8CC]"></i>
+                <p class="text-xs text-gray-500">Sigue atentamente las indicaciones mostradas en el video superior para completar este procedimiento.</p>
+            </div>
+        }
+    </div>
+
+    <!-- Pie de Soporte -->
+    <div class="bg-gradient-to-r from-[#1B365D] to-[#00A8CC] p-6 rounded-3xl text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="space-y-1 text-center sm:text-left">
+            <h3 class="font-black text-sm">¿Aún tienes dudas sobre esta funcionalidad?</h3>
+            <p class="text-xs text-sky-100">Puedes contactar al soporte ministerial para recibir ayuda personalizada.</p>
+        </div>
+        <a href="mailto:panama@compassfinancialministry.org" class="px-4 py-2.5 bg-white text-[#1B365D] hover:bg-sky-50 font-black text-xs rounded-xl shadow transition shrink-0">
+            Contactar Soporte
+        </a>
+    </div>
+
+</div>
