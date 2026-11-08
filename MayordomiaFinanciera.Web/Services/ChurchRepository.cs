@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Dapper;
+using MayordomiaFinanciera.Web.Models.Church;
+using MayordomiaFinanciera.Web.Models.Tutorials;
+using Microsoft.Extensions.Configuration;
+using Npgsql;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
-using Dapper;
-using MayordomiaFinanciera.Web.Models.Church;
-using Microsoft.Extensions.Configuration;
-using Npgsql;
 
 namespace MayordomiaFinanciera.Web.Services
 {
@@ -36,11 +37,84 @@ namespace MayordomiaFinanciera.Web.Services
         Task CreateVolunteerTeamAsync(VolunteerTeamDto team);
         Task AddVolunteerMemberAsync(VolunteerMemberDto member);
         Task RemoveVolunteerMemberAsync(Guid memberId);
+                Task<IEnumerable<PlatformTutorialDto>> GetAllPublishedTutorialsAsync();
+        Task<PlatformTutorialDto?> GetTutorialByIdAsync(Guid id);
+                Task<IEnumerable<PlatformTutorialDto>> GetAllTutorialsAdminAsync();
+        Task CreateTutorialAsync(PlatformTutorialDto tutorial);
+        Task UpdateTutorialAsync(PlatformTutorialDto tutorial);
+        Task DeleteTutorialAsync(Guid id);
     }
 
     public class ChurchRepository : IChurchRepository
     {
         private readonly string _connectionString;
+
+        public async Task<IEnumerable<PlatformTutorialDto>> GetAllTutorialsAdminAsync()
+        {
+            using var connection = CreateConnection();
+            string sql = @"
+        SELECT id, title, category, description, youtube_url AS YoutubeUrl,
+               step_by_step_content AS StepByStepContent, icon_class AS IconClass, 
+               display_order AS DisplayOrder, is_published AS IsPublished
+        FROM platform_tutorials
+        ORDER BY display_order ASC, title ASC;";
+
+            return await connection.QueryAsync<PlatformTutorialDto>(sql);
+        }
+
+        public async Task CreateTutorialAsync(PlatformTutorialDto tutorial)
+        {
+            using var connection = CreateConnection();
+            string sql = @"
+        INSERT INTO platform_tutorials (title, category, description, youtube_url, step_by_step_content, icon_class, display_order, is_published)
+        VALUES (@Title, @Category, @Description, @YoutubeUrl, @StepByStepContent, @IconClass, @DisplayOrder, @IsPublished);";
+
+            await connection.ExecuteAsync(sql, tutorial);
+        }
+
+        public async Task UpdateTutorialAsync(PlatformTutorialDto tutorial)
+        {
+            using var connection = CreateConnection();
+            string sql = @"
+        UPDATE platform_tutorials
+        SET title = @Title, category = @Category, description = @Description,
+            youtube_url = @YoutubeUrl, step_by_step_content = @StepByStepContent,
+            icon_class = @IconClass, display_order = @DisplayOrder, is_published = @IsPublished
+        WHERE id = @Id;";
+
+            await connection.ExecuteAsync(sql, tutorial);
+        }
+
+        public async Task DeleteTutorialAsync(Guid id)
+        {
+            using var connection = CreateConnection();
+            string sql = "DELETE FROM platform_tutorials WHERE id = @Id;";
+            await connection.ExecuteAsync(sql, new { Id = id });
+        }
+        public async Task<IEnumerable<PlatformTutorialDto>> GetAllPublishedTutorialsAsync()
+        {
+            using var connection = CreateConnection();
+            string sql = @"
+        SELECT id, title, category, description, youtube_url AS YoutubeUrl,
+               step_by_step_content AS StepByStepContent, icon_class AS IconClass, display_order AS DisplayOrder
+        FROM platform_tutorials
+        WHERE is_published = TRUE
+        ORDER BY display_order ASC, title ASC;";
+
+            return await connection.QueryAsync<PlatformTutorialDto>(sql);
+        }
+
+        public async Task<PlatformTutorialDto?> GetTutorialByIdAsync(Guid id)
+        {
+            using var connection = CreateConnection();
+            string sql = @"
+        SELECT id, title, category, description, youtube_url AS YoutubeUrl,
+               step_by_step_content AS StepByStepContent, icon_class AS IconClass, display_order AS DisplayOrder
+        FROM platform_tutorials
+        WHERE id = @Id AND is_published = TRUE;";
+
+            return await connection.QueryFirstOrDefaultAsync<PlatformTutorialDto>(sql, new { Id = id });
+        }
 
         public async Task<IEnumerable<VolunteerTeamDto>> GetVolunteerTeamsAsync(Guid churchId)
         {
