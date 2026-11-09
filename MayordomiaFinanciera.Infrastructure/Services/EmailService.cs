@@ -105,5 +105,32 @@ namespace MayordomiaFinanciera.Infrastructure.Services
                 await client.SendMailAsync(message);
             }
         }
+
+        public async Task SendBulletinNotificationAsync(string email, string memberName, string churchName, string bulletinTitle, string bulletinContent)
+        {
+            string subject = $"📢 Nuevo Aviso Oficial - {churchName}";
+
+            string bodyHtml = $@"
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; rounded-radius: 16px; padding: 24px; background-color: #ffffff;'>
+            <div style='text-align: center; margin-bottom: 20px;'>
+                <h2 style='color: #1B365D; margin: 0;'>{churchName}</h2>
+                <span style='font-size: 11px; text-transform: uppercase; color: #00A8CC; font-weight: bold;'>Boletín & Anuncio Oficial</span>
+            </div>
+
+            <div style='background-color: #f8fafc; border-left: 4px solid #00A8CC; padding: 16px; margin-bottom: 20px; border-radius: 8px;'>
+                <h3 style='color: #1B365D; margin-top: 0;'>{bulletinTitle}</h3>
+                <p style='color: #4b5563; font-size: 14px; line-height: 1.6;'>{bulletinContent}</p>
+            </div>
+
+            <p style='font-size: 13px; color: #6b7280;'>Hola <strong>{memberName}</strong>, te enviamos este comunicado importante publicado por el equipo pastoral de tu iglesia.</p>
+
+            <div style='text-align: center; margin-top: 24px; padding-top: 16px; border-t: 1px solid #f1f5f9;'>
+                <a href='https://tudominio.org/Login' style='background-color: #1B365D; color: #ffffff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 12px; inline-block;'>Ingresar a la Plataforma</a>
+            </div>
+        </div>";
+
+            // Utiliza tu método interno de envío de correo SMTP / API (SendGrid, Infobip, etc.)
+            await SendEmailAsync(email, subject, bodyHtml);
+        }
     }
 }
