@@ -11,5 +11,8 @@ namespace MayordomiaFinanciera.Core.Interfaces
         Task SendRegistrationConfirmationAsync(string toEmail, string fullName, string groupName, string username, string rawPassword);
 
         Task SendEmailAsync(string toEmail, string subject, string body);
+
+        // Nuevo método para notificar boletines / avisos eclesiales
+        Task SendBulletinNotificationAsync(string email, string memberName, string churchName, string bulletinTitle, string bulletinContent);
     }
 }
