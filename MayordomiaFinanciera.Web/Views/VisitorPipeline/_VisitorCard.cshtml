@@ -2,10 +2,29 @@
 
 <div class="bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 space-y-2 hover:shadow-md transition">
     <div class="flex items-start justify-between">
-        <h3 class="text-xs font-bold text-[#1B365D] uppercase truncate">@Model["full_name"]</h3>
-        <a href="@Url.Action("Upsert", "VisitorPipeline", new { id = Model["id"] })" class="text-gray-400 hover:text-[#00A8CC] text-[11px]">
-            <i class="fa-solid fa-pen-to-square"></i>
-        </a>
+        <h3 class="text-xs font-bold text-[#1B365D] uppercase truncate max-w-[140px]" title="@Model["full_name"]">
+            @Model["full_name"]
+        </h3>
+        <div class="flex items-center space-x-1.5 shrink-0">
+            <!-- Editar -->
+            <a href="@Url.Action("Upsert", "VisitorPipeline", new { id = Model["id"] })"
+               class="text-gray-400 hover:text-[#00A8CC] text-[11px] p-0.5"
+               title="Editar seguimiento">
+                <i class="fa-solid fa-pen-to-square"></i>
+            </a>
+
+            <!-- Eliminar -->
+            <form asp-action="Delete" asp-controller="VisitorPipeline" method="post" class="inline"
+                  onsubmit="return confirm('¿Estás seguro de eliminar el seguimiento de @Model["full_name"]?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model["id"]" />
+                <button type="submit"
+                        class="text-gray-400 hover:text-red-500 text-[11px] p-0.5"
+                        title="Eliminar seguimiento">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </form>
+        </div>
     </div>
 
     @if (Model["phone"] != DBNull.Value && !string.IsNullOrEmpty(Model["phone"].ToString()))

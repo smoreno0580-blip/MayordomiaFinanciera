@@ -163,6 +163,31 @@ namespace MayordomiaFinanciera.Web.Controllers
             return Ok();
         }
 
+        // 🗑️ [POST] Eliminar visitante o registro de seguimiento
+        [Authorize(Roles = "admin,ADMIN,PASTOR,pastor,copastor,COPASTOR,lider,LIDER,teacher,TEACHER")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            Guid churchId = GetCurrentChurchId();
+            if (churchId == Guid.Empty || id == Guid.Empty)
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
+            string deleteQuery = "DELETE FROM church_visitor_pipeline WHERE id = @Id AND church_id = @ChurchId;";
+            var parameters = new NpgsqlParameter[]
+            {
+        new NpgsqlParameter("@Id", id),
+        new NpgsqlParameter("@ChurchId", churchId)
+            };
+
+            await _postgresRepository.ExecuteNonQueryAsync(deleteQuery, parameters);
+            TempData["SuccessMessage"] = "Registro de seguimiento eliminado correctamente.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
         [HttpGet]
         public async Task<IActionResult> ExportCsv()
         {

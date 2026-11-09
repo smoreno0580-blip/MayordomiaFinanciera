@@ -11,7 +11,7 @@
             <h1 class="text-2xl font-black text-[#1B365D]">Equipos de Servicio Dominical</h1>
             <p class="text-xs text-gray-500">Organiza los equipos ministeriales y servidores de tu congregación.</p>
         </div>
-        <button onclick="document.getElementById('modalTeam').classList.remove('hidden')" class="px-5 py-3 bg-[#1B365D] hover:bg-[#00A8CC] text-white text-xs font-bold rounded-xl shadow-lg transition flex items-center space-x-2">
+        <button onclick="openCreateModal()" class="px-5 py-3 bg-[#1B365D] hover:bg-[#00A8CC] text-white text-xs font-bold rounded-xl shadow-lg transition flex items-center space-x-2">
             <i class="fa-solid fa-plus"></i>
             <span>Nuevo Equipo</span>
         </button>
@@ -26,53 +26,112 @@
 
     <!-- Cuadrícula de Equipos -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        @foreach (var team in Model)
+        @if (!Model.Any())
         {
-            <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-200 flex flex-col justify-between space-y-4">
-                <div class="space-y-2">
-                    <div class="flex justify-between items-start">
-                        <span class="px-3 py-1 bg-sky-50 text-[#00A8CC] font-black text-[10px] rounded-full uppercase">
-                            @team.MemberCount Servidores
-                        </span>
-                        <i class="fa-solid fa-users text-[#1B365D] text-lg"></i>
-                    </div>
-                    <h3 class="font-black text-lg text-[#1B365D]">@team.Name</h3>
-                    <p class="text-xs text-gray-600 line-clamp-2">@(string.IsNullOrWhiteSpace(team.Description) ? "Sin descripción" : team.Description)</p>
-                    <p class="text-[11px] text-gray-400 font-bold">Líder: <span>@(string.IsNullOrWhiteSpace(team.LeaderName) ? "No asignado" : team.LeaderName)</span></p>
+            <div class="col-span-full bg-gray-50 p-8 rounded-2xl text-center border border-gray-200">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-sky-50 flex items-center justify-center text-[#00A8CC] text-xl font-bold">
+                    <i class="fa-solid fa-people-group"></i>
                 </div>
-                <div>
-                    <a asp-action="Details" asp-route-id="@team.Id" class="w-full py-2.5 bg-gray-50 hover:bg-sky-50 text-[#1B365D] hover:text-[#00A8CC] font-bold text-xs rounded-xl border border-gray-200 transition flex items-center justify-center space-x-2">
-                        <span>Ver Integrantes</span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </a>
-                </div>
+                <h3 class="text-sm font-bold text-gray-700">No hay equipos registrados</h3>
+                <p class="text-xs text-gray-500 mt-1">Crea tu primer equipo de servicio (Ej: Alabanza, Ujieres, Protocolo).</p>
             </div>
+        }
+        else
+        {
+            @foreach (var team in Model)
+            {
+                <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-200 flex flex-col justify-between space-y-4 hover:shadow-lg transition">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-start">
+                            <span class="px-3 py-1 bg-sky-50 text-[#00A8CC] font-black text-[10px] rounded-full uppercase">
+                                @team.MemberCount Servidores
+                            </span>
+                            <div class="flex items-center space-x-2">
+                                <!-- Editar Equipo (Uso de Json.Serialize para escape seguro de comillas) -->
+                                <button onclick='openEditModal("@team.Id", @Json.Serialize(team.Name), @Json.Serialize(team.LeaderName ?? ""), @Json.Serialize(team.Description ?? ""))'
+                                        class="text-gray-400 hover:text-[#00A8CC] text-xs p-1" title="Editar Equipo">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <!-- Eliminar Equipo -->
+                                <form asp-action="DeleteTeam" asp-controller="Volunteers" method="post" class="inline" onsubmit="return confirm('¿Estás seguro de eliminar el equipo \'@team.Name\'?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@team.Id" />
+                                    <button type="submit" class="text-gray-400 hover:text-red-500 text-xs p-1" title="Eliminar Equipo">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <h3 class="font-black text-lg text-[#1B365D]">@team.Name</h3>
+                        <p class="text-xs text-gray-600 line-clamp-2">@(string.IsNullOrWhiteSpace(team.Description) ? "Sin descripción" : team.Description)</p>
+                        <p class="text-[11px] text-gray-400 font-bold">Líder: <span class="text-gray-600">@(string.IsNullOrWhiteSpace(team.LeaderName) ? "No asignado" : team.LeaderName)</span></p>
+                    </div>
+                    <div>
+                        <a asp-action="Details" asp-route-id="@team.Id" class="w-full py-2.5 bg-gray-50 hover:bg-sky-50 text-[#1B365D] hover:text-[#00A8CC] font-bold text-xs rounded-xl border border-gray-200 transition flex items-center justify-center space-x-2">
+                            <span>Ver Integrantes</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            }
         }
     </div>
 </div>
 
-<!-- Modal Nuevo Equipo -->
+<!-- Modal Crear / Editar Equipo -->
 <div id="modalTeam" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl">
         <div class="flex justify-between items-center border-b pb-3">
-            <h3 class="font-black text-[#1B365D] text-base">Crear Nuevo Equipo Ministerial</h3>
-            <button onclick="document.getElementById('modalTeam').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 id="modalTitle" class="font-black text-[#1B365D] text-base">Crear Nuevo Equipo Ministerial</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
         </div>
-        <form asp-action="CreateTeam" method="post" class="space-y-4 text-xs">
+        <form id="teamForm" action="@Url.Action("CreateTeam", "Volunteers")" method="post" class="space-y-4 text-xs">
             @Html.AntiForgeryToken()
+            <input type="hidden" id="teamId" name="Id" value="" />
+
             <div>
                 <label class="block font-bold text-gray-700 uppercase mb-1">Nombre del Equipo</label>
-                <input type="text" name="Name" required placeholder="Ej: Alabanza y Adoración" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                <input type="text" id="teamName" name="Name" required placeholder="Ej: Alabanza y Adoración" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
             </div>
             <div>
                 <label class="block font-bold text-gray-700 uppercase mb-1">Líder o Encargado</label>
-                <input type="text" name="LeaderName" placeholder="Ej: Hno. Carlos Mendieta" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                <input type="text" id="teamLeader" name="LeaderName" placeholder="Ej: Hno. Carlos Mendieta" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
             </div>
             <div>
                 <label class="block font-bold text-gray-700 uppercase mb-1">Descripción</label>
-                <textarea name="Description" rows="3" placeholder="Propósito del equipo..." class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]"></textarea>
+                <textarea id="teamDescription" name="Description" rows="3" placeholder="Propósito del equipo..." class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]"></textarea>
             </div>
-            <button type="submit" class="w-full py-3 bg-[#1B365D] text-white font-bold rounded-xl hover:bg-[#00A8CC] transition">Guardar Equipo</button>
+            <button type="submit" id="submitBtn" class="w-full py-3 bg-[#1B365D] text-white font-bold rounded-xl hover:bg-[#00A8CC] transition">Guardar Equipo</button>
         </form>
     </div>
 </div>
+
+<script>
+    function openCreateModal() {
+        document.getElementById('modalTitle').innerText = 'Crear Nuevo Equipo Ministerial';
+        document.getElementById('teamForm').action = '@Url.Action("CreateTeam", "Volunteers")';
+        document.getElementById('teamId').value = '';
+        document.getElementById('teamName').value = '';
+        document.getElementById('teamLeader').value = '';
+        document.getElementById('teamDescription').value = '';
+        document.getElementById('submitBtn').innerText = 'Guardar Equipo';
+        document.getElementById('modalTeam').classList.remove('hidden');
+    }
+
+    function openEditModal(id, name, leader, description) {
+        document.getElementById('modalTitle').innerText = 'Editar Equipo Ministerial';
+        document.getElementById('teamForm').action = '@Url.Action("UpdateTeam", "Volunteers")';
+        document.getElementById('teamId').value = id;
+        document.getElementById('teamName').value = name;
+        document.getElementById('teamLeader').value = leader;
+        document.getElementById('teamDescription').value = description;
+        document.getElementById('submitBtn').innerText = 'Actualizar Equipo';
+        document.getElementById('modalTeam').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('modalTeam').classList.add('hidden');
+    }
+</script>

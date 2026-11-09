@@ -1,9 +1,12 @@
-﻿using MayordomiaFinanciera.Infrastructure.Repositories;
+﻿using MayordomiaFinanciera.Core.Interfaces;
+using MayordomiaFinanciera.Infrastructure.Repositories;
 using MayordomiaFinanciera.Web.Models.Church;
+using MayordomiaFinanciera.Web.Services; // Asegúrate de incluir el namespace de tu IEmailService
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 
@@ -13,10 +16,12 @@ namespace MayordomiaFinanciera.Web.Controllers
     public class BulletinsController : Controller
     {
         private readonly PostgresRepository _postgresRepository;
+        private readonly IEmailService _emailService;
 
-        public BulletinsController(PostgresRepository postgresRepository)
+        public BulletinsController(PostgresRepository postgresRepository, IEmailService emailService)
         {
             _postgresRepository = postgresRepository;
+            _emailService = emailService;
         }
 
         private Guid GetCurrentChurchId()
@@ -87,7 +92,7 @@ namespace MayordomiaFinanciera.Web.Controllers
             return View(model);
         }
 
-        // 3. [POST] Guardar Boletín
+        // 3. [POST] Guardar Boletín y Notificar por Correo a la Membresía
         [Authorize(Roles = "admin,ADMIN,PASTOR,pastor,copastor,COPASTOR,lider,LIDER,teacher,TEACHER")]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -114,7 +119,46 @@ namespace MayordomiaFinanciera.Web.Controllers
                 };
 
                 await _postgresRepository.ExecuteNonQueryAsync(insertQuery, parameters);
-                TempData["SuccessMessage"] = "Boletín publicado exitosamente.";
+
+                // 📩 NOTIFICAR A TODOS LOS MIEMBROS DE LA IGLESIA SI EL BOLETÍN ESTÁ ACTIVO
+                if (model.IsActive)
+                {
+                    // Consultar el nombre de la iglesia y la lista de miembros de la congregación
+                    string churchName = await GetChurchNameAsync(churchId);
+                    var members = await GetChurchMembersAsync(churchId);
+
+                    string bulletinTitle = model.Title ?? "Nuevo Anuncio Oficial";
+                    string bulletinContent = model.Content ?? "";
+
+                    // Ejecutar el envío masivo en segundo plano (asíncrono) para no bloquear la interfaz web
+                    _ = Task.Run(async () =>
+                    {
+                        foreach (var member in members)
+                        {
+                            try
+                            {
+                                await _emailService.SendBulletinNotificationAsync(
+                                    member.Email,
+                                    member.FullName,
+                                    churchName,
+                                    bulletinTitle,
+                                    bulletinContent
+                                );
+                            }
+                            catch (Exception ex)
+                            {
+                                // Log o manejo del error si falla el envío de un correo particular
+                                System.Diagnostics.Debug.WriteLine($"Error enviando correo a {member.Email}: {ex.Message}");
+                            }
+                        }
+                    });
+
+                    TempData["SuccessMessage"] = "Boletín publicado y notificado por correo a los miembros activos.";
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = "Boletín borrador guardado exitosamente.";
+                }
             }
             else
             {
@@ -139,5 +183,51 @@ namespace MayordomiaFinanciera.Web.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+        #region Métodos Auxiliares de Consulta
+
+        private async Task<string> GetChurchNameAsync(Guid churchId)
+        {
+            string query = "SELECT name FROM churches WHERE id = @ChurchId;";
+            var parameters = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
+            var dt = await _postgresRepository.ExecuteQueryAsync(query, parameters);
+
+            if (dt.Rows.Count > 0)
+            {
+                return dt.Rows[0]["name"]?.ToString() ?? "Nuestra Iglesia";
+            }
+            return "Nuestra Iglesia";
+        }
+
+        private async Task<List<(string Email, string FullName)>> GetChurchMembersAsync(Guid churchId)
+        {
+            var members = new List<(string Email, string FullName)>();
+
+            string query = @"
+                SELECT email, full_name 
+                FROM users 
+                WHERE church_id = @ChurchId 
+                  AND is_active = true 
+                  AND email IS NOT NULL 
+                  AND email != '';";
+
+            var parameters = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
+            var dt = await _postgresRepository.ExecuteQueryAsync(query, parameters);
+
+            foreach (DataRow row in dt.Rows)
+            {
+                string email = row["email"]?.ToString() ?? "";
+                string fullName = row["full_name"]?.ToString() ?? "Estimado(a) Miembro";
+
+                if (!string.IsNullOrWhiteSpace(email))
+                {
+                    members.Add((email, fullName));
+                }
+            }
+
+            return members;
+        }
+
+        #endregion
     }
 }

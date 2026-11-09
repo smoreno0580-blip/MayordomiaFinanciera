@@ -6,6 +6,7 @@ using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -89,7 +90,25 @@ namespace MayordomiaFinanciera.Web.Controllers
                     model.Name = row["name"]?.ToString() ?? "";
                     model.Description = row["description"]?.ToString();
                     model.MeetingDay = row["meeting_day"]?.ToString();
-                    model.MeetingTime = row["meeting_time"] != DBNull.Value ? (TimeSpan?)row["meeting_time"] : null;
+
+                    // 🔧 PARSEO SEGURO DE HORA (Evita InvalidCastException con TimeOnly)
+                    if (row["meeting_time"] != DBNull.Value)
+                    {
+                        var rawTime = row["meeting_time"];
+                        if (rawTime is TimeOnly timeOnly)
+                        {
+                            model.MeetingTime = timeOnly.ToTimeSpan();
+                        }
+                        else if (rawTime is TimeSpan timeSpan)
+                        {
+                            model.MeetingTime = timeSpan;
+                        }
+                        else if (TimeSpan.TryParse(rawTime.ToString(), out TimeSpan parsedSpan))
+                        {
+                            model.MeetingTime = parsedSpan;
+                        }
+                    }
+
                     model.Location = row["location"]?.ToString();
                     model.LeaderName = row["leader_name"]?.ToString();
                     model.IsActive = row["is_active"] == DBNull.Value || Convert.ToBoolean(row["is_active"]);
@@ -168,7 +187,32 @@ namespace MayordomiaFinanciera.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // 4. [GET] Registrar Asistencia Semanal (Para Líderes o Pastores)
+        // 🗑️ 4. [POST] Eliminar Grupo Pequeño / Célula
+        [Authorize(Roles = "admin,ADMIN,PASTOR,pastor,copastor,COPASTOR,lider,LIDER,teacher,TEACHER")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            Guid churchId = GetCurrentChurchId();
+            if (churchId == Guid.Empty || id == Guid.Empty)
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
+            string deleteQuery = "DELETE FROM church_small_groups WHERE id = @Id AND church_id = @ChurchId;";
+            var parameters = new NpgsqlParameter[]
+            {
+                new NpgsqlParameter("@Id", id),
+                new NpgsqlParameter("@ChurchId", churchId)
+            };
+
+            await _postgresRepository.ExecuteNonQueryAsync(deleteQuery, parameters);
+            TempData["SuccessMessage"] = "Grupo pequeño eliminado exitosamente.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // 5. [GET] Registrar Asistencia Semanal (Para Líderes o Pastores)
         [HttpGet]
         public async Task<IActionResult> AttendanceReport(Guid groupId)
         {
@@ -199,7 +243,7 @@ namespace MayordomiaFinanciera.Web.Controllers
             return View(attendanceModel);
         }
 
-        // 5. [POST] Guardar Reporte de Asistencia
+        // 6. [POST] Guardar Reporte de Asistencia
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AttendanceReport(GroupAttendanceDto model)
@@ -236,14 +280,14 @@ namespace MayordomiaFinanciera.Web.Controllers
 
             // Consulta SQL a prueba de fallos usando exclusivamente los campos existentes
             string query = @"
-        SELECT name, 
-               COALESCE(leader_name, '') AS leader_name, 
-               COALESCE(location, '') AS location, 
-               COALESCE(meeting_day, '') AS meeting_day, 
-               meeting_time::text AS meeting_time 
-        FROM church_small_groups 
-        WHERE church_id = @ChurchId 
-        ORDER BY name ASC;";
+                SELECT name, 
+                       COALESCE(leader_name, '') AS leader_name, 
+                       COALESCE(location, '') AS location, 
+                       COALESCE(meeting_day, '') AS meeting_day, 
+                       meeting_time::text AS meeting_time 
+                FROM church_small_groups 
+                WHERE church_id = @ChurchId 
+                ORDER BY name ASC;";
 
             var parameters = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
             var dt = await _postgresRepository.ExecuteQueryAsync(query, parameters);
@@ -285,26 +329,26 @@ namespace MayordomiaFinanciera.Web.Controllers
             string groupQuery = "SELECT name FROM church_small_groups WHERE id = @GroupId AND church_id = @ChurchId LIMIT 1;";
             var groupParams = new NpgsqlParameter[]
             {
-        new NpgsqlParameter("@GroupId", groupId),
-        new NpgsqlParameter("@ChurchId", churchId)
+                new NpgsqlParameter("@GroupId", groupId),
+                new NpgsqlParameter("@ChurchId", churchId)
             };
             var dtGroup = await _postgresRepository.ExecuteQueryAsync(groupQuery, groupParams);
             string groupName = dtGroup.Rows.Count > 0 ? dtGroup.Rows[0]["name"]?.ToString() ?? "Celula" : "Celula";
 
             // Consultar la tabla correcta: church_group_attendance_reports
             string attendanceQuery = @"
-        SELECT meeting_date, 
-               COALESCE(attendee_count, 0) AS attendee_count, 
-               COALESCE(notes, '') AS notes, 
-               COALESCE(reported_by, '') AS reported_by 
-        FROM church_group_attendance_reports 
-        WHERE group_id = @GroupId AND church_id = @ChurchId 
-        ORDER BY meeting_date DESC;";
+                SELECT meeting_date, 
+                       COALESCE(attendee_count, 0) AS attendee_count, 
+                       COALESCE(notes, '') AS notes, 
+                       COALESCE(reported_by, '') AS reported_by 
+                FROM church_group_attendance_reports 
+                WHERE group_id = @GroupId AND church_id = @ChurchId 
+                ORDER BY meeting_date DESC;";
 
             var parameters = new NpgsqlParameter[]
             {
-        new NpgsqlParameter("@GroupId", groupId),
-        new NpgsqlParameter("@ChurchId", churchId)
+                new NpgsqlParameter("@GroupId", groupId),
+                new NpgsqlParameter("@ChurchId", churchId)
             };
 
             var dt = await _postgresRepository.ExecuteQueryAsync(attendanceQuery, parameters);

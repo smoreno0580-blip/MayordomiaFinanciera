@@ -3,7 +3,7 @@
     ViewData["Title"] = "Gestión de Grupos Pequeños";
     Layout = "_Layout";
 
-    // Permitir creación y edición a Pastores, Co-pastores, Líderes y Administradores
+    // Permitir creación, edición y eliminación a Pastores, Co-pastores, Líderes y Administradores
     bool isPastorOrAdmin = User.IsInRole("admin") || User.IsInRole("ADMIN") ||
                          User.IsInRole("pastor") || User.IsInRole("PASTOR") ||
                          User.IsInRole("copastor") || User.IsInRole("COPASTOR") ||
@@ -21,14 +21,16 @@
         </div>
         @if (isPastorOrAdmin)
         {
-            <a href="@Url.Action("Upsert", "SmallGroups")" class="px-5 py-2.5 bg-[#00A8CC] hover:bg-[#008fa8] text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-2">
-                <i class="fa-solid fa-plus"></i>
-                <span>Crear Nuevo Grupo</span>
-            </a>
-            <a href="@Url.Action("ExportCsv", "SmallGroups")" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-2">
-                <i class="fa-solid fa-file-csv text-sm"></i>
-                <span>Exportar CSV Células</span>
-            </a>
+            <div class="flex items-center space-x-2">
+                <a href="@Url.Action("Upsert", "SmallGroups")" class="px-5 py-2.5 bg-[#00A8CC] hover:bg-[#008fa8] text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-2">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Crear Nuevo Grupo</span>
+                </a>
+                <a href="@Url.Action("ExportCsv", "SmallGroups")" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-2">
+                    <i class="fa-solid fa-file-csv text-sm"></i>
+                    <span>Exportar CSV Células</span>
+                </a>
+            </div>
         }
     </div>
 
@@ -54,7 +56,7 @@
         {
             @foreach (System.Data.DataRow row in Model.Rows)
             {
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between space-y-4 hover:shadow-md transition">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between space-y-4 hover:shadow-md transition relative">
                     <div class="space-y-2">
                         <div class="flex items-center justify-between">
                             <span class="px-2.5 py-1 bg-amber-50 text-amber-700 font-bold text-[10px] rounded-lg uppercase tracking-wider">
@@ -62,9 +64,18 @@
                             </span>
                             @if (isPastorOrAdmin)
                             {
-                                <a href="@Url.Action("Upsert", "SmallGroups", new { id = row["id"] })" class="text-gray-400 hover:text-[#00A8CC] text-xs font-bold">
-                                    <i class="fa-solid fa-pen-to-square"></i> Editar
-                                </a>
+                                <div class="flex items-center space-x-3">
+                                    <a href="@Url.Action("Upsert", "SmallGroups", new { id = row["id"] })" class="text-gray-400 hover:text-[#00A8CC] text-xs font-bold" title="Editar Grupo">
+                                        <i class="fa-solid fa-pen-to-square"></i> Editar
+                                    </a>
+                                    <form asp-action="Delete" asp-controller="SmallGroups" method="post" onsubmit="return confirm('¿Estás seguro de que deseas eliminar la célula \'@row["name"]\'? Esta acción no se puede deshacer.');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@row["id"]" />
+                                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs font-bold transition" title="Eliminar Grupo">
+                                            <i class="fa-solid fa-trash-can"></i> Eliminar
+                                        </button>
+                                    </form>
+                                </div>
                             }
                         </div>
                         <h2 class="text-base font-bold text-[#1B365D]">@row["name"]</h2>

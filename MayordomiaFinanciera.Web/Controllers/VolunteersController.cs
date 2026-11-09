@@ -51,6 +51,35 @@ namespace MayordomiaFinanciera.Web.Controllers
             return RedirectToAction("Index");
         }
 
+        // ✏️ [POST] Actualizar / Editar Equipo de Servicio
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateTeam(VolunteerTeamDto model)
+        {
+            Guid userId = GetCurrentUserId();
+            var church = await _churchRepository.GetChurchByUserIdAsync(userId);
+            if (church == null) return Unauthorized();
+
+            model.ChurchId = church.Id;
+            await _churchRepository.UpdateVolunteerTeamAsync(model);
+            TempData["SuccessMessage"] = "¡Equipo de servicio actualizado correctamente!";
+            return RedirectToAction("Index");
+        }
+
+        // 🗑️ [POST] Eliminar Equipo de Servicio
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteTeam(Guid id)
+        {
+            Guid userId = GetCurrentUserId();
+            var church = await _churchRepository.GetChurchByUserIdAsync(userId);
+            if (church == null) return Unauthorized();
+
+            await _churchRepository.DeleteVolunteerTeamAsync(id, church.Id);
+            TempData["SuccessMessage"] = "Equipo de servicio eliminado correctamente.";
+            return RedirectToAction("Index");
+        }
+
         [HttpGet]
         public async Task<IActionResult> Details(Guid id)
         {

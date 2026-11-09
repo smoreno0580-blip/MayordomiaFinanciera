@@ -36,6 +36,9 @@ namespace MayordomiaFinanciera.Web.Services
         Task<VolunteerTeamDto?> GetVolunteerTeamByIdAsync(Guid teamId);
         Task CreateVolunteerTeamAsync(VolunteerTeamDto team);
         Task AddVolunteerMemberAsync(VolunteerMemberDto member);
+
+        Task UpdateVolunteerTeamAsync(VolunteerTeamDto model);
+        Task DeleteVolunteerTeamAsync(Guid teamId, Guid churchId);
         Task RemoveVolunteerMemberAsync(Guid memberId);
                 Task<IEnumerable<PlatformTutorialDto>> GetAllPublishedTutorialsAsync();
         Task<PlatformTutorialDto?> GetTutorialByIdAsync(Guid id);
@@ -60,6 +63,25 @@ namespace MayordomiaFinanciera.Web.Services
         ORDER BY display_order ASC, title ASC;";
 
             return await connection.QueryAsync<PlatformTutorialDto>(sql);
+        }
+
+        public async Task UpdateVolunteerTeamAsync(VolunteerTeamDto model)
+        {
+            string sql = @"
+        UPDATE church_volunteer_teams 
+        SET name = @Name, description = @Description, leader_name = @LeaderName
+        WHERE id = @Id AND church_id = @ChurchId;";
+
+            using var connection = CreateConnection();
+            await connection.ExecuteAsync(sql, model);
+        }
+
+        public async Task DeleteVolunteerTeamAsync(Guid teamId, Guid churchId)
+        {
+            string sql = "DELETE FROM church_volunteer_teams WHERE id = @Id AND church_id = @ChurchId;";
+
+            using var connection = CreateConnection();
+            await connection.ExecuteAsync(sql, new { Id = teamId, ChurchId = churchId });
         }
 
         public async Task CreateTutorialAsync(PlatformTutorialDto tutorial)
@@ -492,6 +514,16 @@ namespace MayordomiaFinanciera.Web.Services
             updated_at = CURRENT_TIMESTAMP;";
 
             await connection.ExecuteAsync(sql, profile);
+        }
+        public async Task<IEnumerable<(string Email, string FullName)>> GetChurchMembersContactsAsync(Guid churchId)
+        {
+            using var connection = CreateConnection();
+            string sql = @"
+        SELECT u.email AS Email, u.full_name AS FullName
+        FROM users u
+        WHERE u.church_id = @ChurchId AND u.is_active = TRUE AND u.email IS NOT NULL;";
+
+            return await connection.QueryAsync<(string Email, string FullName)>(sql, new { ChurchId = churchId });
         }
     }
 }
