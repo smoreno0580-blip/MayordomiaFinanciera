@@ -96,12 +96,14 @@ namespace MayordomiaFinanciera.Web.Controllers
             string sessionsQuery;
             string postsQuery;
             string bulletinsQuery;
+            string calendarQuery;
 
             NpgsqlParameter[] userParams;
             NpgsqlParameter[] groupParams;
             NpgsqlParameter[] sessionParams;
             NpgsqlParameter[] postParams;
             NpgsqlParameter[] bulletinParams;
+            NpgsqlParameter[] calendarParams;
 
             if (hasChurch)
             {
@@ -111,12 +113,14 @@ namespace MayordomiaFinanciera.Web.Controllers
                 sessionsQuery = "SELECT * FROM sessions WHERE church_id = @ChurchId ORDER BY date DESC;";
                 postsQuery = "SELECT * FROM posts WHERE church_id = @ChurchId ORDER BY created_at DESC;";
                 bulletinsQuery = "SELECT id, title, content, publish_date FROM church_bulletins WHERE church_id = @ChurchId AND is_active = TRUE ORDER BY publish_date DESC LIMIT 5;";
+                calendarQuery = "SELECT id, title, category, start_date, location, is_virtual FROM church_calendar_events WHERE church_id = @ChurchId AND start_date >= CURRENT_TIMESTAMP ORDER BY start_date ASC LIMIT 6;";
 
                 userParams = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
                 groupParams = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
                 sessionParams = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
                 postParams = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
                 bulletinParams = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
+                calendarParams = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
             }
             else
             {
@@ -126,12 +130,14 @@ namespace MayordomiaFinanciera.Web.Controllers
                 sessionsQuery = "SELECT * FROM sessions WHERE church_id IS NULL ORDER BY date DESC;";
                 postsQuery = "SELECT * FROM posts WHERE church_id IS NULL ORDER BY created_at DESC;";
                 bulletinsQuery = "SELECT id, title, content, publish_date FROM bulletins WHERE church_id IS NULL AND is_published = TRUE ORDER BY publish_date DESC LIMIT 5;";
+                calendarQuery = "SELECT id, title, category, start_date, location, is_virtual FROM church_calendar_events WHERE church_id IS NULL AND start_date >= CURRENT_TIMESTAMP ORDER BY start_date ASC LIMIT 6;";
 
                 userParams = Array.Empty<NpgsqlParameter>();
                 groupParams = Array.Empty<NpgsqlParameter>();
                 sessionParams = Array.Empty<NpgsqlParameter>();
                 postParams = Array.Empty<NpgsqlParameter>();
                 bulletinParams = Array.Empty<NpgsqlParameter>();
+                calendarParams = Array.Empty<NpgsqlParameter>();
             }
 
             // 4. Ejecutar consultas filtradas contra PostgreSQL
@@ -140,6 +146,7 @@ namespace MayordomiaFinanciera.Web.Controllers
             DataTable dtSessions = await _postgresRepository.ExecuteQueryAsync(sessionsQuery, sessionParams);
             DataTable dtPosts = await _postgresRepository.ExecuteQueryAsync(postsQuery, postParams);
             DataTable dtBulletins = await _postgresRepository.ExecuteQueryAsync(bulletinsQuery, bulletinParams);
+            DataTable dtUpcomingEvents = await _postgresRepository.ExecuteQueryAsync(calendarQuery, calendarParams);
 
             // 5. Calcular los KPIs principales segmentados
             int totalUsers = dtUsers != null ? dtUsers.Rows.Count : 0;
@@ -173,9 +180,10 @@ namespace MayordomiaFinanciera.Web.Controllers
             ViewBag.TotalSessions = totalSessions;
             ViewBag.BirthdaysCount = birthdaysCount;
 
-            // Pasar publicaciones y boletines recientes para el dashboard
+            // Pasar publicaciones, boletines y eventos del calendario recientes para el dashboard
             ViewBag.RecentPosts = dtPosts;
             ViewBag.ChurchBulletins = dtBulletins;
+            ViewBag.UpcomingEvents = dtUpcomingEvents;
 
             return View(dtUsers);
         }

@@ -10,6 +10,7 @@
     int birthdaysCount = ViewBag.BirthdaysCount ?? 0;
     DataTable recentPosts = ViewBag.RecentPosts as DataTable ?? new DataTable();
     DataTable churchBulletins = ViewBag.ChurchBulletins as DataTable ?? new DataTable();
+    DataTable upcomingEvents = ViewBag.UpcomingEvents as DataTable ?? new DataTable();
     bool isStudent = User.IsInRole("student") || User.IsInRole("MIEMBRO") || User.IsInRole("miembro");
 
     // Obtener el rol eclesial específico de la base de datos y claims
@@ -158,6 +159,85 @@
     </div>
 }
 
+<!-- SECCIÓN: Agenda Ministerial & Próximos Eventos -->
+<div class="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#00A8CC]/10 text-[#00A8CC] flex items-center justify-center font-bold text-lg">
+                <i class="fa-solid fa-calendar-days"></i>
+            </div>
+            <div>
+                <span class="text-[10px] font-black uppercase tracking-widest text-[#00A8CC]">Agenda Eclesial</span>
+                <h2 class="text-base font-black text-[#1B365D]">Próximos Eventos & Cultos</h2>
+            </div>
+        </div>
+
+        <!-- ⚙️ Botón de Mantenimiento del Calendario -->
+        <a href="@Url.Action("Index", "Calendar")"
+           class="px-3.5 py-2 bg-gray-50 hover:bg-[#1B365D] text-[#1B365D] hover:text-white font-bold text-xs rounded-xl border border-gray-200 transition flex items-center space-x-2 shadow-sm">
+            <i class="fa-solid fa-gear text-xs"></i>
+            <span>Administrar Calendario</span>
+        </a>
+    </div>
+
+    <!-- Lista de Eventos Agendados -->
+    <div class="space-y-3 pt-1">
+        @if (upcomingEvents.Rows.Count > 0)
+        {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                @foreach (DataRow row in upcomingEvents.Rows)
+                {
+                    var startDate = Convert.ToDateTime(row["start_date"]);
+                    bool isVirtual = row["is_virtual"] != DBNull.Value && Convert.ToBoolean(row["is_virtual"]);
+
+                    <div class="flex items-center justify-between p-3.5 bg-gray-50/80 hover:bg-gray-50 rounded-2xl border border-gray-100 transition">
+                        <div class="flex items-center space-x-3.5 min-w-0">
+                            <div class="w-11 h-11 rounded-2xl bg-[#1B365D] text-white flex flex-col items-center justify-center font-black shrink-0">
+                                <span class="text-[9px] uppercase tracking-wider text-sky-300">@startDate.ToString("MMM", new System.Globalization.CultureInfo("es-ES"))</span>
+                                <span class="text-sm font-black leading-none">@startDate.Day</span>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center space-x-2">
+                                    <span class="px-2 py-0.5 bg-sky-50 text-[#00A8CC] font-bold text-[9px] rounded-md uppercase">
+                                        @row["category"]
+                                    </span>
+                                    @if (isVirtual)
+                                    {
+                                        <span class="text-[10px] text-indigo-600 font-bold flex items-center gap-1">
+                                            <i class="fa-solid fa-video"></i> Online
+                                        </span>
+                                    }
+                                </div>
+                                <h4 class="text-xs font-bold text-[#1B365D] truncate mt-0.5">@row["title"]</h4>
+                                <p class="text-[11px] text-gray-500 flex items-center space-x-2 mt-0.5">
+                                    <span><i class="fa-solid fa-clock text-gray-400 mr-1"></i>@startDate.ToString("hh:mm tt")</span>
+                                    @if (row["location"] != DBNull.Value && !string.IsNullOrWhiteSpace(row["location"].ToString()))
+                                    {
+                                        <span class="truncate"><i class="fa-solid fa-location-dot text-red-400 mr-1"></i>@row["location"]</span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                        <a href="@Url.Action("Index", "Calendar")" class="text-gray-400 hover:text-[#00A8CC] text-xs p-2 shrink-0">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-6 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 space-y-2">
+                <i class="fa-solid fa-calendar-check text-gray-300 text-2xl"></i>
+                <p class="text-xs text-gray-500 font-medium">No hay eventos próximos en la agenda.</p>
+                <a href="@Url.Action("Index", "Calendar")" class="text-xs font-bold text-[#00A8CC] hover:underline inline-block">
+                    + Programar un nuevo evento
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
 <!-- SECCIÓN: Boletines y Avisos Oficiales para la Congregación -->
 <div class="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
     <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
@@ -201,6 +281,12 @@
     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-1">
         <h3 class="font-bold text-[#1B365D] text-base mb-4 flex items-center"><i class="fa-solid fa-compass text-[#00A8CC] mr-2"></i> Accesos Rápidos</h3>
         <div class="space-y-3">
+            <!-- Acceso Directo al Calendario Ministerial -->
+            <a href="@Url.Action("Index", "Calendar")" class="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all text-sm font-semibold text-gray-700">
+                <span><i class="fa-solid fa-calendar-days mr-2 text-[#00A8CC]"></i> Agenda / Calendario</span>
+                <i class="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+            </a>
+
             @if (!isStudent)
             {
                 <a href="@Url.Action("Index", "Groups")" class="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all text-sm font-semibold text-gray-700">

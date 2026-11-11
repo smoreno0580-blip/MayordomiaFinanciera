@@ -1,0 +1,240 @@
+﻿@model System.Data.DataTable
+@{
+    ViewData["Title"] = "Escuela Dominical & Check-In";
+    Layout = "_Layout";
+    Guid currentChurchId = ViewBag.CurrentChurchId != null ? (Guid)ViewBag.CurrentChurchId : Guid.Empty;
+}
+
+<div class="max-w-6xl mx-auto space-y-8 py-6 px-4">
+    <!-- Encabezado -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl shadow-md border border-gray-200">
+        <div>
+            <span class="text-xs font-bold text-[#00A8CC] uppercase tracking-wider">Ministerio Infantil</span>
+            <h1 class="text-2xl font-black text-[#1B365D]">Escuela Dominical & Check-In</h1>
+            <p class="text-xs text-gray-500">Gestión de asistencia, seguridad infantil y control de retiro de menores.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button onclick="openAddChildModal()" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-[#1B365D] text-xs font-bold rounded-xl transition flex items-center space-x-2">
+                <i class="fa-solid fa-child-reaching"></i>
+                <span>Registrar Nuevo Niño</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mensajes de Alerta -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-xl text-emerald-800 text-xs flex items-center space-x-2">
+            <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl text-red-800 text-xs flex items-center space-x-2">
+            <i class="fa-solid fa-circle-exclamation text-red-600 text-sm"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    <!-- Cuadrícula de Niños / Alumnos -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @if (Model == null || Model.Rows.Count == 0)
+        {
+            <div class="col-span-full bg-gray-50 p-8 rounded-2xl text-center border border-gray-200">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-sky-50 flex items-center justify-center text-[#00A8CC] text-xl font-bold">
+                    <i class="fa-solid fa-children"></i>
+                </div>
+                <h3 class="text-sm font-bold text-gray-700">No hay niños registrados</h3>
+                <p class="text-xs text-gray-500 mt-1">Comienza registrando a los menores para habilitar el control de asistencia.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (System.Data.DataRow row in Model.Rows)
+            {
+                bool isCheckedIn = row["status"] != DBNull.Value && row["status"].ToString() == "CHECKED_IN";
+                string fullName = $"{row["first_name"]} {row["last_name"]}";
+                string allergies = row["allergy_notes"] != DBNull.Value ? row["allergy_notes"].ToString() : "";
+                string secureCode = row["secure_code"] != DBNull.Value ? row["secure_code"].ToString() : "N/A";
+
+                <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-200 flex flex-col justify-between space-y-4 hover:shadow-lg transition">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="px-3 py-1 @(isCheckedIn ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500") font-black text-[10px] rounded-full uppercase tracking-wider">
+                                @(isCheckedIn ? "En Aula (Check-In)" : "Fuera / No ingresado")
+                            </span>
+                            <span class="text-xs font-bold text-[#1B365D] bg-sky-50 px-2.5 py-1 rounded-lg">
+                                PIN: <span class="text-[#00A8CC]">@secureCode</span>
+                            </span>
+                        </div>
+
+                        <div>
+                            <h3 class="font-black text-base text-[#1B365D]">@fullName</h3>
+                            <p class="text-xs text-gray-600 mt-0.5"><i class="fa-solid fa-user-shield text-gray-400 mr-1"></i> Tutor: <strong>@row["parent_guardian_name"]</strong></p>
+                            <p class="text-xs text-gray-600"><i class="fa-solid fa-phone text-gray-400 mr-1"></i> Tel: @row["parent_phone"]</p>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(allergies))
+                        {
+                            <div class="bg-red-50 border border-red-200 p-2.5 rounded-xl text-xs text-red-700 flex items-start space-x-2">
+                                <i class="fa-solid fa-triangle-exclamation text-red-500 mt-0.5"></i>
+                                <div>
+                                    <span class="font-bold">Alergias / Cuidados:</span> @allergies
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Botones de Acción Check-In / Check-Out -->
+                    <div class="pt-2 border-t border-gray-100 flex items-center justify-between">
+                        @if (isCheckedIn)
+                        {
+                            <button onclick="openCheckOutModal('@row["attendance_id"]', '@fullName')" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                                <span>Realizar Check-Out</span>
+                            </button>
+                        }
+                        else
+                        {
+                            <button onclick="openCheckInModal('@row["id"]', '@fullName', '@row["parent_guardian_name"]', '@secureCode')" class="w-full py-2 bg-[#1B365D] hover:bg-[#00A8CC] text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-right-to-bracket"></i>
+                                <span>Realizar Check-In</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Modal 1: Registrar Nuevo Niño -->
+<div id="modalAddChild" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b pb-3">
+            <h3 class="font-black text-[#1B365D] text-base">Registrar Nuevo Niño</h3>
+            <button onclick="closeModal('modalAddChild')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+
+        <form asp-action="SaveChild" asp-controller="SundaySchool" method="post" class="space-y-4 text-xs">
+            @Html.AntiForgeryToken()
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Nombre</label>
+                    <input type="text" name="FirstName" required placeholder="Ej: Mateo" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Apellido</label>
+                    <input type="text" name="LastName" required placeholder="Ej: Pérez" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Fecha de Nacimiento</label>
+                    <input type="date" name="BirthDate" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Código PIN de Retiro</label>
+                    <input type="text" name="SecureCode" required placeholder="Ej: 4821" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-bold text-gray-700 uppercase mb-1">Nombre del Padre / Tutor</label>
+                <input type="text" name="ParentName" required placeholder="Ej: Carlos Pérez" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+            </div>
+
+            <div>
+                <label class="block font-bold text-gray-700 uppercase mb-1">Teléfono de Contacto</label>
+                <input type="text" name="ParentPhone" required placeholder="Ej: +507 6000-0000" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+            </div>
+
+            <div>
+                <label class="block font-bold text-gray-700 uppercase mb-1">Alergias o Notas Médicas</label>
+                <textarea name="AllergyNotes" rows="2" placeholder="Ej: Alérgico al maní, asma leve..." class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]"></textarea>
+            </div>
+
+            <button type="submit" class="w-full py-3 bg-[#1B365D] text-white font-bold rounded-xl hover:bg-[#00A8CC] transition">Guardar Registro</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 2: Check-In -->
+<div id="modalCheckIn" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl">
+        <div class="flex justify-between items-center border-b pb-3">
+            <h3 class="font-black text-[#1B365D] text-base">Check-In: <span id="ciChildName"></span></h3>
+            <button onclick="closeModal('modalCheckIn')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+
+        <form asp-action="CheckIn" asp-controller="SundaySchool" method="post" class="space-y-4 text-xs">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="ciChildId" name="ChildId" />
+
+            <div>
+                <label class="block font-bold text-gray-700 uppercase mb-1">¿Quién lo trae al aula?</label>
+                <input type="text" id="ciGuardianName" name="GuardianName" required class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+            </div>
+
+            <div>
+                <label class="block font-bold text-gray-700 uppercase mb-1">Confirmar PIN de Seguridad</label>
+                <input type="text" id="ciSecureCode" name="SecureCode" required placeholder="PIN asignado" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+            </div>
+
+            <button type="submit" class="w-full py-3 bg-[#00A8CC] text-white font-bold rounded-xl hover:bg-[#1B365D] transition">Confirmar Ingreso al Aula</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 3: Check-Out -->
+<div id="modalCheckOut" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl">
+        <div class="flex justify-between items-center border-b pb-3">
+            <h3 class="font-black text-[#1B365D] text-base">Check-Out: <span id="coChildName"></span></h3>
+            <button onclick="closeModal('modalCheckOut')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+
+        <form asp-action="CheckOut" asp-controller="SundaySchool" method="post" class="space-y-4 text-xs">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="coAttendanceId" name="AttendanceId" />
+
+            <div>
+                <label class="block font-bold text-gray-700 uppercase mb-1">¿Quién retira al niño?</label>
+                <input type="text" name="ReturingGuardian" required placeholder="Nombre del padre o tutor autorizado" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+            </div>
+
+            <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl text-amber-800">
+                <p class="font-bold">Aviso de Seguridad:</p>
+                <p>Verifique que la persona que retira coincida con el registro del tutor antes de entregar al menor.</p>
+            </div>
+
+            <button type="submit" class="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition">Completar Salida Segura</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openAddChildModal() {
+        document.getElementById('modalAddChild').classList.remove('hidden');
+    }
+
+    function openCheckInModal(childId, childName, parentName, secureCode) {
+        document.getElementById('ciChildId').value = childId;
+        document.getElementById('ciChildName').innerText = childName;
+        document.getElementById('ciGuardianName').value = parentName;
+        document.getElementById('ciSecureCode').value = secureCode;
+        document.getElementById('modalCheckIn').classList.remove('hidden');
+    }
+
+    function openCheckOutModal(attendanceId, childName) {
+        document.getElementById('coAttendanceId').value = attendanceId;
+        document.getElementById('coChildName').innerText = childName;
+        document.getElementById('modalCheckOut').classList.remove('hidden');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+    }
+</script>

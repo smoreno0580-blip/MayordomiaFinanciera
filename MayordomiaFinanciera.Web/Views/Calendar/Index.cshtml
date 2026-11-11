@@ -1,0 +1,253 @@
+﻿@model System.Data.DataTable
+@{
+    ViewData["Title"] = "Calendario Ministerial";
+    Layout = "_Layout";
+    bool isPastorOrAdmin = ViewBag.IsPastorOrAdmin ?? false;
+    Guid currentChurchId = ViewBag.CurrentChurchId != null ? (Guid)ViewBag.CurrentChurchId : Guid.Empty;
+}
+
+<div class="max-w-6xl mx-auto space-y-8 py-6 px-4">
+    <!-- Encabezado -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl shadow-md border border-gray-200">
+        <div>
+            <span class="text-xs font-bold text-[#00A8CC] uppercase tracking-wider">Agenda Eclesial</span>
+            <h1 class="text-2xl font-black text-[#1B365D]">Calendario Ministerial</h1>
+            <p class="text-xs text-gray-500">Visualiza las actividades, cultos y eventos especiales de la congregación.</p>
+        </div>
+        @if (isPastorOrAdmin)
+        {
+            <button onclick="openCreateModal()" class="px-5 py-3 bg-[#1B365D] hover:bg-[#00A8CC] text-white text-xs font-bold rounded-xl shadow-lg transition flex items-center space-x-2">
+                <i class="fa-solid fa-calendar-plus"></i>
+                <span>Nuevo Evento</span>
+            </button>
+        }
+    </div>
+
+    <!-- Mensajes de Alerta -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-xl text-emerald-800 text-xs flex items-center space-x-2">
+            <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl text-red-800 text-xs flex items-center space-x-2">
+            <i class="fa-solid fa-circle-exclamation text-red-600 text-sm"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    <!-- Cuadrícula de Eventos -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @if (Model == null || Model.Rows.Count == 0)
+        {
+            <div class="col-span-full bg-gray-50 p-8 rounded-2xl text-center border border-gray-200">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-sky-50 flex items-center justify-center text-[#00A8CC] text-xl font-bold">
+                    <i class="fa-solid fa-calendar-days"></i>
+                </div>
+                <h3 class="text-sm font-bold text-gray-700">No hay eventos programados</h3>
+                <p class="text-xs text-gray-500 mt-1">Programa el primer evento o culto general para la congregación.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (System.Data.DataRow row in Model.Rows)
+            {
+                var startDate = Convert.ToDateTime(row["start_date"]);
+                var endDate = Convert.ToDateTime(row["end_date"]);
+                bool isVirtual = row["is_virtual"] != DBNull.Value && Convert.ToBoolean(row["is_virtual"]);
+
+                <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-200 flex flex-col justify-between space-y-4 hover:shadow-lg transition">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="px-3 py-1 bg-sky-50 text-[#00A8CC] font-black text-[10px] rounded-full uppercase tracking-wider">
+                                @row["category"]
+                            </span>
+
+                            @if (isPastorOrAdmin)
+                            {
+                                <div class="flex items-center space-x-1.5">
+                                    <!-- Editar -->
+                                    <button onclick='openEditModal("@row["id"]", @Json.Serialize(row["title"].ToString()), @Json.Serialize(row["description"]?.ToString() ?? ""), "@row["category"]", "@startDate.ToString("yyyy-MM-ddTHH:mm")", "@endDate.ToString("yyyy-MM-ddTHH:mm")", @Json.Serialize(row["location"]?.ToString() ?? ""), @isVirtual.ToString().ToLower(), @Json.Serialize(row["meeting_link"]?.ToString() ?? ""))'
+                                            class="text-gray-400 hover:text-[#00A8CC] p-1 text-xs" title="Editar Evento">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <!-- Eliminar -->
+                                    <form asp-action="DeleteEvent" asp-controller="Calendar" method="post" class="inline" onsubmit="return confirm('¿Estás seguro de eliminar este evento?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@row["id"]" />
+                                        <button type="submit" class="text-gray-400 hover:text-red-500 p-1 text-xs" title="Eliminar Evento">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            }
+                        </div>
+
+                        <div>
+                            <h3 class="font-black text-base text-[#1B365D]">@row["title"]</h3>
+                            <p class="text-xs text-gray-600 line-clamp-2 mt-1">@(row["description"] != DBNull.Value ? row["description"] : "Sin descripción adicional.")</p>
+                        </div>
+
+                        <!-- Fecha y Hora -->
+                        <div class="bg-gray-50 p-3 rounded-2xl space-y-1.5 text-xs text-gray-600">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-calendar-day text-[#00A8CC] w-4 text-center"></i>
+                                <span class="font-bold">@startDate.ToString("dd MMM yyyy", new System.Globalization.CultureInfo("es-ES"))</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-clock text-[#00A8CC] w-4 text-center"></i>
+                                <span>@startDate.ToString("hh:mm tt") - @endDate.ToString("hh:mm tt")</span>
+                            </div>
+                        </div>
+
+                        <!-- Ubicación o Enlace -->
+                        <div class="text-xs text-gray-500 space-y-1">
+                            @if (isVirtual)
+                            {
+                                <div class="flex items-center space-x-1.5 text-indigo-600 font-medium">
+                                    <i class="fa-solid fa-video"></i>
+                                    <a href="@row["meeting_link"]" target="_blank" class="hover:underline truncate">Enlace de Reunión Online</a>
+                                </div>
+                            }
+                            @if (row["location"] != DBNull.Value && !string.IsNullOrWhiteSpace(row["location"].ToString()))
+                            {
+                                <div class="flex items-center space-x-1.5">
+                                    <i class="fa-solid fa-location-dot text-red-500"></i>
+                                    <span class="truncate">@row["location"]</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Modal Crear / Editar Evento -->
+<div id="modalEvent" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b pb-3">
+            <h3 id="modalTitle" class="font-black text-[#1B365D] text-base">Programar Nuevo Evento</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <form asp-action="SaveEvent" asp-controller="Calendar" method="post" class="space-y-4 text-xs">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="eventId" name="Id" value="" />
+            <input type="hidden" name="ChurchId" value="@currentChurchId" />
+
+            <div>
+                <label class="block font-bold text-gray-700 uppercase mb-1">Título del Evento</label>
+                <input type="text" id="eventTitle" name="Title" required placeholder="Ej: Culto Dominical General" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Categoría</label>
+                    <select id="eventCategory" name="Category" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]">
+                        <option value="Culto">Culto General</option>
+                        <option value="Escuela Dominical">Escuela Dominical</option>
+                        <option value="Jóvenes">Jóvenes</option>
+                        <option value="Célula">Célula / Grupo Pequeño</option>
+                        <option value="Ensayo">Ensayo de Alabanza</option>
+                        <option value="Especial">Evento Especial</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Ubicación / Templo</label>
+                    <input type="text" id="eventLocation" name="Location" placeholder="Ej: Templo Principal" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Fecha y Hora de Inicio</label>
+                    <input type="datetime-local" id="eventStart" name="StartDate" required class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Fecha y Hora de Fin</label>
+                    <input type="datetime-local" id="eventEnd" name="EndDate" required class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-1">
+                <input type="checkbox" id="eventIsVirtual" name="IsVirtual" value="true" onchange="toggleVirtualLink(this)" class="w-4 h-4 rounded text-[#00A8CC] focus:ring-[#00A8CC]" />
+                <label for="eventIsVirtual" class="font-bold text-gray-700">¿Es un evento virtual o híbrido?</label>
+            </div>
+
+            <div id="virtualLinkContainer" class="hidden">
+                <label class="block font-bold text-gray-700 uppercase mb-1">Enlace de Reunión (Zoom / Meet)</label>
+                <input type="url" id="eventMeetingLink" name="MeetingLink" placeholder="https://zoom.us/..." class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+            </div>
+
+            <div>
+                <label class="block font-bold text-gray-700 uppercase mb-1">Descripción</label>
+                <textarea id="eventDescription" name="Description" rows="3" placeholder="Detalles o propósito del evento..." class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]"></textarea>
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full py-3 bg-[#1B365D] text-white font-bold rounded-xl hover:bg-[#00A8CC] transition">Guardar Evento</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openCreateModal() {
+        document.getElementById('modalTitle').innerText = 'Programar Nuevo Evento';
+        document.getElementById('eventId').value = '';
+        document.getElementById('eventTitle').value = '';
+        document.getElementById('eventCategory').value = 'Culto';
+        document.getElementById('eventLocation').value = '';
+
+        let now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('eventStart').value = now.toISOString().slice(0, 16);
+
+        now.setHours(now.getHours() + 2);
+        document.getElementById('eventEnd').value = now.toISOString().slice(0, 16);
+
+        document.getElementById('eventIsVirtual').checked = false;
+        document.getElementById('eventMeetingLink').value = '';
+        document.getElementById('virtualLinkContainer').classList.add('hidden');
+        document.getElementById('eventDescription').value = '';
+        document.getElementById('submitBtn').innerText = 'Guardar Evento';
+        document.getElementById('modalEvent').classList.remove('hidden');
+    }
+
+    function openEditModal(id, title, description, category, start, end, location, isVirtual, meetingLink) {
+        document.getElementById('modalTitle').innerText = 'Editar Evento Ministerial';
+        document.getElementById('eventId').value = id;
+        document.getElementById('eventTitle').value = title;
+        document.getElementById('eventCategory').value = category;
+        document.getElementById('eventLocation').value = location;
+        document.getElementById('eventStart').value = start;
+        document.getElementById('eventEnd').value = end;
+
+        let virtualCheckbox = document.getElementById('eventIsVirtual');
+        virtualCheckbox.checked = isVirtual;
+        toggleVirtualLink(virtualCheckbox);
+
+        document.getElementById('eventMeetingLink').value = meetingLink;
+        document.getElementById('eventDescription').value = description;
+        document.getElementById('submitBtn').innerText = 'Actualizar Evento';
+        document.getElementById('modalEvent').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('modalEvent').classList.add('hidden');
+    }
+
+    function toggleVirtualLink(checkbox) {
+        let container = document.getElementById('virtualLinkContainer');
+        if (checkbox.checked) {
+            container.classList.remove('hidden');
+        } else {
+            container.classList.add('hidden');
+        }
+    }
+</script>
