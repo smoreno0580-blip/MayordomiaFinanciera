@@ -1,0 +1,120 @@
+﻿@model System.Data.DataTable
+@{
+    ViewData["Title"] = "Configuración de Correo SMTP";
+    Layout = "_Layout";
+
+    string smtpHost = "";
+    int smtpPort = 587;
+    string smtpUser = "";
+    string smtpPassword = "";
+    string smtpSenderEmail = "";
+    string smtpSenderName = "";
+    bool useCustomSmtp = false;
+
+    if (Model != null && Model.Rows.Count > 0)
+    {
+        var row = Model.Rows[0];
+        smtpHost = row["smtp_host"]?.ToString() ?? "";
+        smtpPort = row["smtp_port"] != DBNull.Value ? Convert.ToInt32(row["smtp_port"]) : 587;
+        smtpUser = row["smtp_user"]?.ToString() ?? "";
+        smtpPassword = row["smtp_password"]?.ToString() ?? "";
+        smtpSenderEmail = row["smtp_sender_email"]?.ToString() ?? "";
+        smtpSenderName = row["smtp_sender_name"]?.ToString() ?? "";
+        useCustomSmtp = row["use_custom_smtp"] != DBNull.Value && Convert.ToBoolean(row["use_custom_smtp"]);
+    }
+}
+
+<div class="max-w-4xl mx-auto space-y-6 py-6 px-4">
+    <!-- Encabezado -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl shadow-md border border-gray-200">
+        <div>
+            <span class="text-xs font-bold text-[#00A8CC] uppercase tracking-wider">Infraestructura Ministerial</span>
+            <h1 class="text-2xl font-black text-[#1B365D]">Configuración de Correo SMTP</h1>
+            <p class="text-xs text-gray-500">Personaliza el servidor de correo corporativo desde donde tu iglesia enviará notificaciones y boletines.</p>
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-xl text-emerald-800 text-xs flex items-center space-x-2">
+            <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl text-red-800 text-xs flex items-center space-x-2">
+            <i class="fa-solid fa-circle-exclamation text-red-600 text-sm"></i>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    <!-- Formulario de Configuración -->
+    <div class="bg-white p-8 rounded-3xl shadow-md border border-gray-200">
+        <form asp-action="Save" asp-controller="ChurchEmail" method="post" class="space-y-6 text-xs">
+            @Html.AntiForgeryToken()
+
+            <!-- Interruptor de Activación -->
+            <div class="flex items-center justify-between bg-sky-50 p-4 rounded-2xl border border-sky-100">
+                <div class="space-y-0.5">
+                    <label class="font-bold text-[#1B365D] text-sm">Activar Servidor SMTP Personalizado</label>
+                    <p class="text-gray-500">Si está desactivado, el sistema utilizará el servidor de correo general de respaldo.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="useCustomSmtp" value="true" @(useCustomSmtp ? "checked" : "") class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00A8CC]"></div>
+                </label>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Host SMTP -->
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Servidor SMTP (Host)</label>
+                    <input type="text" name="smtpHost" value="@smtpHost" placeholder="Ej: smtp.gmail.com o smtp.office365.com" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                </div>
+
+                <!-- Puerto -->
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Puerto SMTP</label>
+                    <input type="number" name="smtpPort" value="@smtpPort" placeholder="Ej: 587 o 465" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Usuario / Correo -->
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Usuario / Cuenta de Correo</label>
+                    <input type="text" name="smtpUser" value="@smtpUser" placeholder="ejemplo@iglesia.org" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                </div>
+
+                <!-- Contraseña o Clave de Aplicación -->
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Contraseña o Clave de Aplicación</label>
+                    <input type="password" name="smtpPassword" value="@smtpPassword" placeholder="••••••••••••" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
+                <!-- Correo del Remitente -->
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Correo Electrónico del Remitente (From)</label>
+                    <input type="email" name="smtpSenderEmail" value="@smtpSenderEmail" placeholder="notificaciones@iglesia.org" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                </div>
+
+                <!-- Nombre del Remitente -->
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase mb-1">Nombre Visible del Remitente</label>
+                    <input type="text" name="smtpSenderName" value="@smtpSenderName" placeholder="Ej: Iglesia Cristiana Fuerte" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                </div>
+            </div>
+
+            <div class="pt-4 flex justify-end">
+                <button type="submit" class="px-6 py-3 bg-[#1B365D] hover:bg-[#00A8CC] text-white font-bold rounded-xl shadow transition flex items-center space-x-2">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>Guardar Configuración SMTP</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

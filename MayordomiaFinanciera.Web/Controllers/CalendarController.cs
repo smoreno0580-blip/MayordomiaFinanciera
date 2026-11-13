@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using MayordomiaFinanciera.Core.Interfaces;
 using MayordomiaFinanciera.Infrastructure.Repositories;
 using MayordomiaFinanciera.Web.Models.Church;
 using Microsoft.AspNetCore.Authorization;
@@ -14,10 +16,12 @@ namespace MayordomiaFinanciera.Web.Controllers
     public class CalendarController : Controller
     {
         private readonly PostgresRepository _postgresRepository;
+        private readonly IEmailService _emailService;
 
-        public CalendarController(PostgresRepository postgresRepository)
+        public CalendarController(PostgresRepository postgresRepository, IEmailService emailService)
         {
             _postgresRepository = postgresRepository;
+            _emailService = emailService;
         }
 
         private Guid GetCurrentChurchId()
@@ -37,10 +41,9 @@ namespace MayordomiaFinanciera.Web.Controllers
             throw new UnauthorizedAccessException("Usuario no autenticado.");
         }
 
-        // Método auxiliar para evaluar si el usuario tiene privilegios administrativos o ministeriales (Rol de Iglesia + Rol General)
+        // Método auxiliar para evaluar si el usuario tiene privilegios administrativos o ministeriales
         private async Task<bool> UserCanManageCalendarAsync(Guid churchId)
         {
-            // 1. Evaluar roles generales del sistema
             if (User.IsInRole("admin") || User.IsInRole("ADMIN") ||
                 User.IsInRole("pastor") || User.IsInRole("PASTOR") ||
                 User.IsInRole("copastor") || User.IsInRole("COPASTOR"))
@@ -48,7 +51,6 @@ namespace MayordomiaFinanciera.Web.Controllers
                 return true;
             }
 
-            // 2. Evaluar el rol específico de la iglesia desde la base de datos (tabla users)
             string userEmail = User.FindFirst(ClaimTypes.Email)?.Value
                                 ?? User.FindFirst(ClaimTypes.Name)?.Value
                                 ?? User.Identity?.Name ?? "";
@@ -63,7 +65,6 @@ namespace MayordomiaFinanciera.Web.Controllers
                 {
                     string churchRole = dt.Rows[0]["church_role"]?.ToString()?.ToUpper() ?? "";
 
-                    // Permitir si el rol eclesial es Pastor, Admin, Copastor, Líder o Profesor (Teacher)
                     if (churchRole.Contains("PASTOR") || churchRole.Contains("ADMIN") ||
                         churchRole.Contains("COPASTOR") || churchRole.Contains("LIDER") ||
                         churchRole.Contains("TEACHER") || churchRole.Contains("PROFESOR"))
@@ -97,7 +98,6 @@ namespace MayordomiaFinanciera.Web.Controllers
 
             var dt = await _postgresRepository.ExecuteQueryAsync(query, parameters);
 
-            // Evaluar permisos basados tanto en el sistema como en el rol de la iglesia
             ViewBag.IsPastorOrAdmin = await UserCanManageCalendarAsync(churchId);
             ViewBag.CurrentChurchId = churchId;
 
@@ -132,7 +132,7 @@ namespace MayordomiaFinanciera.Web.Controllers
             return Json(dt);
         }
 
-        // ➕ 3. Guardar o Actualizar Evento (Upsert)
+        // ➕ 3. Guardar o Actualizar Evento (Upsert con Notificación por Correo)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveEvent(CalendarEventDto model)
@@ -142,17 +142,15 @@ namespace MayordomiaFinanciera.Web.Controllers
 
             if (churchId == Guid.Empty) return Unauthorized();
 
-            // Validar permisos del rol eclesial antes de permitir la escritura
             if (!await UserCanManageCalendarAsync(churchId))
             {
                 TempData["ErrorMessage"] = "No tienes permisos de rol eclesial para modificar el calendario.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // 🔍 DIAGNÓSTICO DE ERRORES DEL MODELSTATE
             if (!ModelState.IsValid)
             {
-                var errorList = new System.Collections.Generic.List<string>();
+                var errorList = new List<string>();
                 foreach (var state in ModelState)
                 {
                     foreach (var error in state.Value.Errors)
@@ -164,7 +162,9 @@ namespace MayordomiaFinanciera.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            if (!model.Id.HasValue || model.Id.Value == Guid.Empty)
+            bool isNewEvent = !model.Id.HasValue || model.Id.Value == Guid.Empty;
+
+            if (isNewEvent)
             {
                 // Crear evento
                 string insertQuery = @"
@@ -188,7 +188,48 @@ namespace MayordomiaFinanciera.Web.Controllers
                 };
 
                 await _postgresRepository.ExecuteNonQueryAsync(insertQuery, parameters);
-                TempData["SuccessMessage"] = "¡Evento agendado exitosamente!";
+
+                // 📩 NOTIFICAR A LA MEMBRESÍA POR CORREO AL CREAR UN NUEVO EVENTO
+                string churchName = await GetChurchNameAsync(churchId);
+                var members = await GetChurchMembersAsync(churchId);
+
+                string eventTitle = model.Title ?? "Nuevo Evento Eclesial";
+                string eventDateStr = model.StartDate.ToString("dd/MM/yyyy hh:mm tt");
+                string eventLocation = !string.IsNullOrWhiteSpace(model.Location) ? model.Location : "Instalaciones de la Iglesia";
+                string eventDesc = model.Description ?? "";
+
+                _ = Task.Run(async () =>
+                {
+                    foreach (var member in members)
+                    {
+                        try
+                        {
+                            string subject = $"Nuevo Evento Agendado: {eventTitle}";
+                            string htmlBody = $@"
+                                <div style='font-family: Arial, sans-serif; padding: 20px; color: #1B365D;'>
+                                    <h2>¡Hola, {member.FullName}!</h2>
+                                    <p>Te informamos que <strong>{churchName}</strong> ha programado un nuevo evento en su calendario:</p>
+                                    <div style='background-color: #f8fafc; border-left: 4px solid #00A8CC; padding: 15px; margin: 15px 0;'>
+                                        <h3 style='margin-top: 0; color: #1B365D;'>{eventTitle}</h3>
+                                        <p><strong>📅 Fecha y Hora:</strong> {eventDateStr}</p>
+                                        <p><strong>📍 Lugar:</strong> {eventLocation}</p>
+                                        {(model.IsVirtual ? $"<p><strong>💻 Enlace Virtual:</strong> <a href='{model.MeetingLink}'>Unirse a la reunión</a></p>" : "")}
+                                        {(!string.IsNullOrEmpty(eventDesc) ? $"<p><strong>📝 Detalles:</strong> {eventDesc}</p>" : "")}
+                                    </div>
+                                    <p style='font-size: 11px; color: #666;'>Te esperamos. ¡Dios te bendiga!</p>
+                                </div>";
+
+                            // Envío usando el servicio unificado (evalúa automáticamente SMTP personalizado de la iglesia o general)
+                            await _emailService.SendEmailAsync(member.Email, subject, htmlBody);
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error enviando notificación de calendario a {member.Email}: {ex.Message}");
+                        }
+                    }
+                });
+
+                TempData["SuccessMessage"] = "¡Evento agendado exitosamente y notificado a la congregación!";
             }
             else
             {
@@ -247,5 +288,51 @@ namespace MayordomiaFinanciera.Web.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+        #region Métodos Auxiliares
+
+        private async Task<string> GetChurchNameAsync(Guid churchId)
+        {
+            string query = "SELECT name FROM churches WHERE id = @ChurchId;";
+            var parameters = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
+            var dt = await _postgresRepository.ExecuteQueryAsync(query, parameters);
+
+            if (dt.Rows.Count > 0)
+            {
+                return dt.Rows[0]["name"]?.ToString() ?? "Nuestra Iglesia";
+            }
+            return "Nuestra Iglesia";
+        }
+
+        private async Task<List<(string Email, string FullName)>> GetChurchMembersAsync(Guid churchId)
+        {
+            var members = new List<(string Email, string FullName)>();
+
+            // 🎯 Consulta ajustada exactamente a los campos reales de la tabla users de Supabase (id, name, email, church_id)
+            string query = @"
+                SELECT email, name 
+                FROM users 
+                WHERE church_id = @ChurchId 
+                  AND email IS NOT NULL 
+                  AND email != '';";
+
+            var parameters = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
+            var dt = await _postgresRepository.ExecuteQueryAsync(query, parameters);
+
+            foreach (DataRow row in dt.Rows)
+            {
+                string email = row["email"]?.ToString() ?? "";
+                string fullName = row["name"]?.ToString() ?? "Estimado(a) Miembro";
+
+                if (!string.IsNullOrWhiteSpace(email))
+                {
+                    members.Add((email, fullName));
+                }
+            }
+
+            return members;
+        }
+
+        #endregion
     }
 }

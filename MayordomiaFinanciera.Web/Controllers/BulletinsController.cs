@@ -1,7 +1,7 @@
 ﻿using MayordomiaFinanciera.Core.Interfaces;
 using MayordomiaFinanciera.Infrastructure.Repositories;
 using MayordomiaFinanciera.Web.Models.Church;
-using MayordomiaFinanciera.Web.Services; // Asegúrate de incluir el namespace de tu IEmailService
+using MayordomiaFinanciera.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
@@ -123,20 +123,24 @@ namespace MayordomiaFinanciera.Web.Controllers
                 // 📩 NOTIFICAR A TODOS LOS MIEMBROS DE LA IGLESIA SI EL BOLETÍN ESTÁ ACTIVO
                 if (model.IsActive)
                 {
-                    // Consultar el nombre de la iglesia y la lista de miembros de la congregación
                     string churchName = await GetChurchNameAsync(churchId);
                     var members = await GetChurchMembersAsync(churchId);
+
+                    // Consultar la configuración SMTP específica de la iglesia (si existe y está activa)
+                    var churchSmtpConfig = await GetChurchEmailSettingsAsync(churchId);
 
                     string bulletinTitle = model.Title ?? "Nuevo Anuncio Oficial";
                     string bulletinContent = model.Content ?? "";
 
-                    // Ejecutar el envío masivo en segundo plano (asíncrono) para no bloquear la interfaz web
+                    // Ejecutar el envío masivo en segundo plano (asíncrono)
                     _ = Task.Run(async () =>
                     {
                         foreach (var member in members)
                         {
                             try
                             {
+                                // Si tu IEmailService acepta parámetros SMTP personalizados, los puedes inyectar aquí.
+                                // De lo contrario, el servicio interno evaluará la tabla church_email_settings por cada churchId.
                                 await _emailService.SendBulletinNotificationAsync(
                                     member.Email,
                                     member.FullName,
@@ -147,7 +151,6 @@ namespace MayordomiaFinanciera.Web.Controllers
                             }
                             catch (Exception ex)
                             {
-                                // Log o manejo del error si falla el envío de un correo particular
                                 System.Diagnostics.Debug.WriteLine($"Error enviando correo a {member.Email}: {ex.Message}");
                             }
                         }
@@ -226,6 +229,25 @@ namespace MayordomiaFinanciera.Web.Controllers
             }
 
             return members;
+        }
+
+        // 🔍 Método para verificar si la iglesia tiene configuración SMTP personalizada en la nueva tabla
+        private async Task<DataRow?> GetChurchEmailSettingsAsync(Guid churchId)
+        {
+            string query = @"
+                SELECT smtp_host, smtp_port, smtp_user, smtp_password, smtp_sender_email, smtp_sender_name, use_custom_smtp
+                FROM church_email_settings 
+                WHERE church_id = @ChurchId AND use_custom_smtp = true 
+                LIMIT 1;";
+
+            var parameters = new NpgsqlParameter[] { new NpgsqlParameter("@ChurchId", churchId) };
+            var dt = await _postgresRepository.ExecuteQueryAsync(query, parameters);
+
+            if (dt.Rows.Count > 0)
+            {
+                return dt.Rows[0];
+            }
+            return null; // Si no existe o está inactivo, retornará null para que el servicio use la cuenta general
         }
 
         #endregion

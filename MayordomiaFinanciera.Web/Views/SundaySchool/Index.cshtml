@@ -3,10 +3,24 @@
     ViewData["Title"] = "Escuela Dominical & Check-In";
     Layout = "_Layout";
     Guid currentChurchId = ViewBag.CurrentChurchId != null ? (Guid)ViewBag.CurrentChurchId : Guid.Empty;
+
+    int totalCount = Model?.Rows.Count ?? 0;
+    int inClassCount = 0;
+    if (Model != null)
+    {
+        foreach (System.Data.DataRow r in Model.Rows)
+        {
+            if (r["status"] != DBNull.Value && r["status"].ToString() == "CHECKED_IN")
+            {
+                inClassCount++;
+            }
+        }
+    }
+    int outCount = totalCount - inClassCount;
 }
 
-<div class="max-w-6xl mx-auto space-y-8 py-6 px-4">
-    <!-- Encabezado -->
+<div class="max-w-6xl mx-auto space-y-6 py-6 px-4">
+    <!-- Encabezado con Botón de Reporte Histórico -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl shadow-md border border-gray-200">
         <div>
             <span class="text-xs font-bold text-[#00A8CC] uppercase tracking-wider">Ministerio Infantil</span>
@@ -14,7 +28,15 @@
             <p class="text-xs text-gray-500">Gestión de asistencia, seguridad infantil y control de retiro de menores.</p>
         </div>
         <div class="flex items-center space-x-3">
-            <button onclick="openAddChildModal()" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-[#1B365D] text-xs font-bold rounded-xl transition flex items-center space-x-2">
+            <!-- Botón de Reporte Histórico -->
+            <a asp-action="Report" asp-controller="SundaySchool"
+               class="px-4 py-2.5 bg-gray-100 hover:bg-sky-50 text-[#1B365D] hover:text-[#00A8CC] text-xs font-bold rounded-xl transition flex items-center space-x-2">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Ver Reporte Histórico</span>
+            </a>
+
+            <!-- Botón Registrar Nuevo Niño -->
+            <button type="button" onclick="openAddChildModal()" class="px-4 py-2.5 bg-[#1B365D] hover:bg-[#00A8CC] text-white text-xs font-bold rounded-xl shadow transition flex items-center space-x-2">
                 <i class="fa-solid fa-child-reaching"></i>
                 <span>Registrar Nuevo Niño</span>
             </button>
@@ -37,8 +59,59 @@
         </div>
     }
 
+    <!-- Barra de Búsqueda y Filtros por Estado -->
+    @if (totalCount > 0)
+    {
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+            <!-- Buscador -->
+            <div class="relative flex-1">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                <input type="text"
+                       id="childSearchInput"
+                       oninput="filterChildren()"
+                       placeholder="Buscar por nombre del niño, tutor o PIN..."
+                       class="w-full pl-9 pr-8 py-2.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00A8CC] bg-gray-50 focus:bg-white transition" />
+                <button type="button"
+                        id="clearSearchBtn"
+                        onclick="clearSearch()"
+                        class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Botones de Filtro -->
+            <div class="flex items-center space-x-2 overflow-x-auto">
+                <button type="button"
+                        data-filter="ALL"
+                        onclick="setStatusFilter('ALL')"
+                        class="status-filter-btn px-3.5 py-2 rounded-xl text-xs font-bold transition bg-[#1B365D] text-white flex items-center space-x-1.5 shrink-0">
+                    <span>Todos</span>
+                    <span class="px-1.5 py-0.5 text-[10px] rounded-full bg-white/20">@totalCount</span>
+                </button>
+
+                <button type="button"
+                        data-filter="IN"
+                        onclick="setStatusFilter('IN')"
+                        class="status-filter-btn px-3.5 py-2 rounded-xl text-xs font-bold transition bg-gray-100 text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 flex items-center space-x-1.5 shrink-0">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>En Aula</span>
+                    <span class="px-1.5 py-0.5 text-[10px] rounded-full bg-gray-200 text-gray-700">@inClassCount</span>
+                </button>
+
+                <button type="button"
+                        data-filter="OUT"
+                        onclick="setStatusFilter('OUT')"
+                        class="status-filter-btn px-3.5 py-2 rounded-xl text-xs font-bold transition bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center space-x-1.5 shrink-0">
+                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                    <span>Fuera</span>
+                    <span class="px-1.5 py-0.5 text-[10px] rounded-full bg-gray-200 text-gray-700">@outCount</span>
+                </button>
+            </div>
+        </div>
+    }
+
     <!-- Cuadrícula de Niños / Alumnos -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div id="childrenGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @if (Model == null || Model.Rows.Count == 0)
         {
             <div class="col-span-full bg-gray-50 p-8 rounded-2xl text-center border border-gray-200">
@@ -54,25 +127,70 @@
             @foreach (System.Data.DataRow row in Model.Rows)
             {
                 bool isCheckedIn = row["status"] != DBNull.Value && row["status"].ToString() == "CHECKED_IN";
-                string fullName = $"{row["first_name"]} {row["last_name"]}";
-                string allergies = row["allergy_notes"] != DBNull.Value ? row["allergy_notes"].ToString() : "";
-                string secureCode = row["secure_code"] != DBNull.Value ? row["secure_code"].ToString() : "N/A";
+                string firstName = row["first_name"]?.ToString() ?? "";
+                string lastName = row["last_name"]?.ToString() ?? "";
+                string fullName = $"{firstName} {lastName}";
+                string birthDateStr = row["birth_date"] != DBNull.Value
+                ? Convert.ToDateTime(row["birth_date"]).ToString("yyyy-MM-dd")
+                : "";
+                string allergies = row["allergy_notes"] != DBNull.Value ? row["allergy_notes"].ToString()! : "";
+                string parentName = row["parent_guardian_name"]?.ToString() ?? "";
+                string parentPhone = row["parent_phone"]?.ToString() ?? "";
+                string secureCode = row["secure_code"] != DBNull.Value ? row["secure_code"].ToString()! : "1234";
+                string searchIndex = $"{fullName} {parentName} {parentPhone} {secureCode}".ToLowerInvariant();
 
-                <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-200 flex flex-col justify-between space-y-4 hover:shadow-lg transition">
+                <div class="child-card bg-white p-6 rounded-3xl shadow-md border border-gray-200 flex flex-col justify-between space-y-4 hover:shadow-lg transition"
+                     data-status="@(isCheckedIn ? "IN" : "OUT")"
+                     data-search="@searchIndex">
                     <div class="space-y-3">
-                        <div class="flex justify-between items-start">
+                        <div class="flex justify-between items-center gap-2">
                             <span class="px-3 py-1 @(isCheckedIn ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500") font-black text-[10px] rounded-full uppercase tracking-wider">
                                 @(isCheckedIn ? "En Aula (Check-In)" : "Fuera / No ingresado")
                             </span>
-                            <span class="text-xs font-bold text-[#1B365D] bg-sky-50 px-2.5 py-1 rounded-lg">
-                                PIN: <span class="text-[#00A8CC]">@secureCode</span>
-                            </span>
+
+                            <div class="flex items-center space-x-1.5">
+                                <span class="text-xs font-bold text-[#1B365D] bg-sky-50 px-2.5 py-1 rounded-lg">
+                                    PIN: <span class="text-[#00A8CC]">@secureCode</span>
+                                </span>
+
+                                <!-- Botón Editar -->
+                                <button type="button"
+                                        onclick="openEditChildModal(this)"
+                                        data-id="@row["id"]"
+                                        data-firstname="@firstName"
+                                        data-lastname="@lastName"
+                                        data-birthdate="@birthDateStr"
+                                        data-allergies="@allergies"
+                                        data-parentname="@parentName"
+                                        data-parentphone="@parentPhone"
+                                        data-securecode="@secureCode"
+                                        title="Editar registro"
+                                        class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-sky-100 text-gray-600 hover:text-[#00A8CC] flex items-center justify-center transition">
+                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                </button>
+
+                                <!-- Formulario Eliminar -->
+                                <form asp-action="DeleteChild" asp-controller="SundaySchool" method="post"
+                                      onsubmit="return confirm('¿Estás seguro de eliminar a @fullName y todo su historial de asistencia?');"
+                                      class="inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@row["id"]" />
+                                    <button type="submit" title="Eliminar registro"
+                                            class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-red-600 flex items-center justify-center transition">
+                                        <i class="fa-solid fa-trash-can text-xs"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
 
                         <div>
                             <h3 class="font-black text-base text-[#1B365D]">@fullName</h3>
-                            <p class="text-xs text-gray-600 mt-0.5"><i class="fa-solid fa-user-shield text-gray-400 mr-1"></i> Tutor: <strong>@row["parent_guardian_name"]</strong></p>
-                            <p class="text-xs text-gray-600"><i class="fa-solid fa-phone text-gray-400 mr-1"></i> Tel: @row["parent_phone"]</p>
+                            <p class="text-xs text-gray-600 mt-0.5"><i class="fa-solid fa-user-shield text-gray-400 mr-1"></i> Tutor: <strong>@parentName</strong></p>
+                            <p class="text-xs text-gray-600"><i class="fa-solid fa-phone text-gray-400 mr-1"></i> Tel: @parentPhone</p>
+                            @if (!string.IsNullOrEmpty(birthDateStr))
+                            {
+                                <p class="text-xs text-gray-500 mt-0.5"><i class="fa-solid fa-cake-candles text-gray-400 mr-1"></i> Nac: @Convert.ToDateTime(row["birth_date"]).ToString("dd/MM/yyyy")</p>
+                            }
                         </div>
 
                         @if (!string.IsNullOrEmpty(allergies))
@@ -90,14 +208,24 @@
                     <div class="pt-2 border-t border-gray-100 flex items-center justify-between">
                         @if (isCheckedIn)
                         {
-                            <button onclick="openCheckOutModal('@row["attendance_id"]', '@fullName')" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-2">
+                            <button type="button"
+                                    onclick="openCheckOutModal(this)"
+                                    data-attendanceid="@row["attendance_id"]"
+                                    data-childname="@fullName"
+                                    class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-2">
                                 <i class="fa-solid fa-right-from-bracket"></i>
                                 <span>Realizar Check-Out</span>
                             </button>
                         }
                         else
                         {
-                            <button onclick="openCheckInModal('@row["id"]', '@fullName', '@row["parent_guardian_name"]', '@secureCode')" class="w-full py-2 bg-[#1B365D] hover:bg-[#00A8CC] text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-2">
+                            <button type="button"
+                                    onclick="openCheckInModal(this)"
+                                    data-childid="@row["id"]"
+                                    data-childname="@fullName"
+                                    data-parentname="@parentName"
+                                    data-securecode="@secureCode"
+                                    class="w-full py-2 bg-[#1B365D] hover:bg-[#00A8CC] text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-2">
                                 <i class="fa-solid fa-right-to-bracket"></i>
                                 <span>Realizar Check-In</span>
                             </button>
@@ -105,58 +233,67 @@
                     </div>
                 </div>
             }
+
+            <!-- Estado vacío al filtrar -->
+            <div id="noFilterResults" class="hidden col-span-full bg-gray-50 p-8 rounded-2xl text-center border border-gray-200">
+                <i class="fa-solid fa-filter-circle-xmark text-gray-400 text-2xl mb-2"></i>
+                <h3 class="text-sm font-bold text-gray-700">Sin coincidencias</h3>
+                <p class="text-xs text-gray-500 mt-1">No se encontraron niños que coincidan con la búsqueda o el filtro seleccionado.</p>
+            </div>
         }
     </div>
 </div>
 
-<!-- Modal 1: Registrar Nuevo Niño -->
+<!-- Modal 1: Registrar o Editar Niño -->
 <div id="modalAddChild" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center border-b pb-3">
-            <h3 class="font-black text-[#1B365D] text-base">Registrar Nuevo Niño</h3>
-            <button onclick="closeModal('modalAddChild')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 id="modalChildTitle" class="font-black text-[#1B365D] text-base">Registrar Nuevo Niño</h3>
+            <button type="button" onclick="closeModal('modalAddChild')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
         </div>
 
         <form asp-action="SaveChild" asp-controller="SundaySchool" method="post" class="space-y-4 text-xs">
             @Html.AntiForgeryToken()
+            <input type="hidden" id="childId" name="id" value="" />
+
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block font-bold text-gray-700 uppercase mb-1">Nombre</label>
-                    <input type="text" name="FirstName" required placeholder="Ej: Mateo" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                    <input type="text" id="childFirstName" name="firstName" required placeholder="Ej: Mateo" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
                 </div>
                 <div>
                     <label class="block font-bold text-gray-700 uppercase mb-1">Apellido</label>
-                    <input type="text" name="LastName" required placeholder="Ej: Pérez" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                    <input type="text" id="childLastName" name="lastName" required placeholder="Ej: Pérez" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block font-bold text-gray-700 uppercase mb-1">Fecha de Nacimiento</label>
-                    <input type="date" name="BirthDate" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                    <input type="date" id="childBirthDate" name="birthDate" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
                 </div>
                 <div>
                     <label class="block font-bold text-gray-700 uppercase mb-1">Código PIN de Retiro</label>
-                    <input type="text" name="SecureCode" required placeholder="Ej: 4821" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                    <input type="text" id="childSecureCode" name="secureCode" required placeholder="Ej: 4821" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
                 </div>
             </div>
 
             <div>
                 <label class="block font-bold text-gray-700 uppercase mb-1">Nombre del Padre / Tutor</label>
-                <input type="text" name="ParentName" required placeholder="Ej: Carlos Pérez" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                <input type="text" id="childParentName" name="parentName" required placeholder="Ej: Carlos Pérez" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
             </div>
 
             <div>
                 <label class="block font-bold text-gray-700 uppercase mb-1">Teléfono de Contacto</label>
-                <input type="text" name="ParentPhone" required placeholder="Ej: +507 6000-0000" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                <input type="text" id="childParentPhone" name="parentPhone" required placeholder="Ej: +507 6000-0000" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
             </div>
 
             <div>
                 <label class="block font-bold text-gray-700 uppercase mb-1">Alergias o Notas Médicas</label>
-                <textarea name="AllergyNotes" rows="2" placeholder="Ej: Alérgico al maní, asma leve..." class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]"></textarea>
+                <textarea id="childAllergyNotes" name="allergyNotes" rows="2" placeholder="Ej: Alérgico al maní, asma leve..." class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]"></textarea>
             </div>
 
-            <button type="submit" class="w-full py-3 bg-[#1B365D] text-white font-bold rounded-xl hover:bg-[#00A8CC] transition">Guardar Registro</button>
+            <button type="submit" id="modalChildSubmitBtn" class="w-full py-3 bg-[#1B365D] text-white font-bold rounded-xl hover:bg-[#00A8CC] transition">Guardar Registro</button>
         </form>
     </div>
 </div>
@@ -166,21 +303,21 @@
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl">
         <div class="flex justify-between items-center border-b pb-3">
             <h3 class="font-black text-[#1B365D] text-base">Check-In: <span id="ciChildName"></span></h3>
-            <button onclick="closeModal('modalCheckIn')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <button type="button" onclick="closeModal('modalCheckIn')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
         </div>
 
         <form asp-action="CheckIn" asp-controller="SundaySchool" method="post" class="space-y-4 text-xs">
             @Html.AntiForgeryToken()
-            <input type="hidden" id="ciChildId" name="ChildId" />
+            <input type="hidden" id="ciChildId" name="childId" />
 
             <div>
                 <label class="block font-bold text-gray-700 uppercase mb-1">¿Quién lo trae al aula?</label>
-                <input type="text" id="ciGuardianName" name="GuardianName" required class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                <input type="text" id="ciGuardianName" name="guardianName" required class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
             </div>
 
             <div>
                 <label class="block font-bold text-gray-700 uppercase mb-1">Confirmar PIN de Seguridad</label>
-                <input type="text" id="ciSecureCode" name="SecureCode" required placeholder="PIN asignado" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                <input type="text" id="ciSecureCode" name="secureCode" required placeholder="PIN asignado" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
             </div>
 
             <button type="submit" class="w-full py-3 bg-[#00A8CC] text-white font-bold rounded-xl hover:bg-[#1B365D] transition">Confirmar Ingreso al Aula</button>
@@ -188,49 +325,143 @@
     </div>
 </div>
 
-<!-- Modal 3: Check-Out -->
+<!-- Modal 3: Check-Out con Validación de PIN -->
 <div id="modalCheckOut" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl">
         <div class="flex justify-between items-center border-b pb-3">
             <h3 class="font-black text-[#1B365D] text-base">Check-Out: <span id="coChildName"></span></h3>
-            <button onclick="closeModal('modalCheckOut')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <button type="button" onclick="closeModal('modalCheckOut')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
         </div>
 
         <form asp-action="CheckOut" asp-controller="SundaySchool" method="post" class="space-y-4 text-xs">
             @Html.AntiForgeryToken()
-            <input type="hidden" id="coAttendanceId" name="AttendanceId" />
+            <input type="hidden" id="coAttendanceId" name="attendanceId" />
 
             <div>
                 <label class="block font-bold text-gray-700 uppercase mb-1">¿Quién retira al niño?</label>
-                <input type="text" name="ReturingGuardian" required placeholder="Nombre del padre o tutor autorizado" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+                <input type="text" id="coReturingGuardian" name="returingGuardian" required placeholder="Nombre del padre o tutor autorizado" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
             </div>
 
-            <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl text-amber-800">
-                <p class="font-bold">Aviso de Seguridad:</p>
-                <p>Verifique que la persona que retira coincida con el registro del tutor antes de entregar al menor.</p>
+            <div>
+                <label class="block font-bold text-gray-700 uppercase mb-1">PIN de Seguridad del Tutor</label>
+                <input type="password" inputmode="numeric" id="coSecurityCode" name="securityCode" required autocomplete="off" placeholder="Ingrese el PIN de retiro" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-red-500 font-bold tracking-widest" />
             </div>
 
-            <button type="submit" class="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition">Completar Salida Segura</button>
+            <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl text-amber-800 flex items-start space-x-2">
+                <i class="fa-solid fa-shield-halved text-amber-600 mt-0.5"></i>
+                <div>
+                    <p class="font-bold">Validación Obligatoria:</p>
+                    <p>El sistema verificará que el PIN coincida con el registro antes de autorizar la salida del menor.</p>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition">Verificar PIN y Completar Salida</button>
         </form>
     </div>
 </div>
 
 <script>
+    let currentStatusFilter = 'ALL';
+
+    function setStatusFilter(status) {
+        currentStatusFilter = status;
+
+        document.querySelectorAll('.status-filter-btn').forEach(btn => {
+            const isSelected = btn.dataset.filter === status;
+            const badge = btn.querySelector('span:last-child');
+
+            if (isSelected) {
+                btn.className = 'status-filter-btn px-3.5 py-2 rounded-xl text-xs font-bold transition bg-[#1B365D] text-white flex items-center space-x-1.5 shrink-0';
+                if (badge) badge.className = 'px-1.5 py-0.5 text-[10px] rounded-full bg-white/20 text-white';
+            } else {
+                btn.className = 'status-filter-btn px-3.5 py-2 rounded-xl text-xs font-bold transition bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center space-x-1.5 shrink-0';
+                if (badge) badge.className = 'px-1.5 py-0.5 text-[10px] rounded-full bg-gray-200 text-gray-700';
+            }
+        });
+
+        filterChildren();
+    }
+
+    function filterChildren() {
+        const input = document.getElementById('childSearchInput');
+        const clearBtn = document.getElementById('clearSearchBtn');
+        const term = (input ? input.value : '').trim().toLowerCase();
+
+        if (clearBtn) {
+            clearBtn.classList.toggle('hidden', term.length === 0);
+        }
+
+        const cards = document.querySelectorAll('.child-card');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const matchesStatus = currentStatusFilter === 'ALL' || card.dataset.status === currentStatusFilter;
+            const matchesSearch = term === '' || (card.dataset.search || '').includes(term);
+
+            if (matchesStatus && matchesSearch) {
+                card.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+
+        const noResults = document.getElementById('noFilterResults');
+        if (noResults) {
+            noResults.classList.toggle('hidden', visibleCount > 0);
+        }
+    }
+
+    function clearSearch() {
+        const input = document.getElementById('childSearchInput');
+        if (input) {
+            input.value = '';
+            input.focus();
+            filterChildren();
+        }
+    }
+
     function openAddChildModal() {
+        document.getElementById('modalChildTitle').innerText = 'Registrar Nuevo Niño';
+        document.getElementById('modalChildSubmitBtn').innerText = 'Guardar Registro';
+        document.getElementById('childId').value = '';
+        document.getElementById('childFirstName').value = '';
+        document.getElementById('childLastName').value = '';
+        document.getElementById('childBirthDate').value = '';
+        document.getElementById('childSecureCode').value = '';
+        document.getElementById('childParentName').value = '';
+        document.getElementById('childParentPhone').value = '';
+        document.getElementById('childAllergyNotes').value = '';
         document.getElementById('modalAddChild').classList.remove('hidden');
     }
 
-    function openCheckInModal(childId, childName, parentName, secureCode) {
-        document.getElementById('ciChildId').value = childId;
-        document.getElementById('ciChildName').innerText = childName;
-        document.getElementById('ciGuardianName').value = parentName;
-        document.getElementById('ciSecureCode').value = secureCode;
+    function openEditChildModal(btn) {
+        document.getElementById('modalChildTitle').innerText = 'Editar Registro Infantil';
+        document.getElementById('modalChildSubmitBtn').innerText = 'Actualizar Datos';
+        document.getElementById('childId').value = btn.dataset.id;
+        document.getElementById('childFirstName').value = btn.dataset.firstname;
+        document.getElementById('childLastName').value = btn.dataset.lastname;
+        document.getElementById('childBirthDate').value = btn.dataset.birthdate;
+        document.getElementById('childSecureCode').value = btn.dataset.securecode;
+        document.getElementById('childParentName').value = btn.dataset.parentname;
+        document.getElementById('childParentPhone').value = btn.dataset.parentphone;
+        document.getElementById('childAllergyNotes').value = btn.dataset.allergies;
+        document.getElementById('modalAddChild').classList.remove('hidden');
+    }
+
+    function openCheckInModal(btn) {
+        document.getElementById('ciChildId').value = btn.dataset.childid;
+        document.getElementById('ciChildName').innerText = btn.dataset.childname;
+        document.getElementById('ciGuardianName').value = btn.dataset.parentname;
+        document.getElementById('ciSecureCode').value = btn.dataset.securecode;
         document.getElementById('modalCheckIn').classList.remove('hidden');
     }
 
-    function openCheckOutModal(attendanceId, childName) {
-        document.getElementById('coAttendanceId').value = attendanceId;
-        document.getElementById('coChildName').innerText = childName;
+    function openCheckOutModal(btn) {
+        document.getElementById('coAttendanceId').value = btn.dataset.attendanceid;
+        document.getElementById('coChildName').innerText = btn.dataset.childname;
+        document.getElementById('coReturingGuardian').value = '';
+        document.getElementById('coSecurityCode').value = '';
         document.getElementById('modalCheckOut').classList.remove('hidden');
     }
 

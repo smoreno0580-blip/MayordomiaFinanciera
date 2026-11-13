@@ -1,0 +1,108 @@
+﻿@model System.Data.DataTable
+@{
+    ViewData["Title"] = "Reporte de Asistencia - Escuela Dominical";
+    Layout = "_Layout";
+    string startDate = ViewBag.StartDate ?? DateTime.Now.ToString("yyyy-MM-dd");
+    string endDate = ViewBag.EndDate ?? DateTime.Now.ToString("yyyy-MM-dd");
+
+    int totalRecords = Model?.Rows.Count ?? 0;
+}
+
+<div class="max-w-6xl mx-auto space-y-6 py-6 px-4">
+    <!-- Encabezado -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl shadow-md border border-gray-200">
+        <div>
+            <span class="text-xs font-bold text-[#00A8CC] uppercase tracking-wider">Ministerio Infantil</span>
+            <h1 class="text-2xl font-black text-[#1B365D]">Historial de Asistencia</h1>
+            <p class="text-xs text-gray-500">Consulta los registros de entradas y salidas de menores por rango de fechas.</p>
+        </div>
+        <div>
+            <a asp-action="Index" asp-controller="SundaySchool" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-[#1B365D] text-xs font-bold rounded-xl transition flex items-center space-x-2">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Volver al Check-In</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros por Fecha -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+        <form method="get" asp-action="Report" asp-controller="SundaySchool" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end text-xs">
+            <div>
+                <label class="block font-bold text-gray-700 uppercase mb-1">Fecha de Inicio</label>
+                <input type="date" name="startDate" value="@startDate" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+            </div>
+            <div>
+                <label class="block font-bold text-gray-700 uppercase mb-1">Fecha de Fin</label>
+                <input type="date" name="endDate" value="@endDate" class="w-full px-3.5 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#00A8CC]" />
+            </div>
+            <div class="flex items-center space-x-2">
+                <button type="submit" class="w-full py-2.5 bg-[#1B365D] hover:bg-[#00A8CC] text-white font-bold rounded-xl transition flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-filter"></i>
+                    <span>Filtrar Registros</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla de Resultados -->
+    <div class="bg-white rounded-3xl shadow-md border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="font-black text-[#1B365D] text-sm">Registros Encontrados</h3>
+            <span class="px-3 py-1 bg-sky-50 text-[#00A8CC] text-xs font-bold rounded-full">Total: @totalRecords asistencias</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                        <th class="p-4 font-bold">Fecha / Hora Entrada</th>
+                        <th class="p-4 font-bold">Menor</th>
+                        <th class="p-4 font-bold">Tutor (Entrega / Retira)</th>
+                        <th class="p-4 font-bold">PIN Usado</th>
+                        <th class="p-4 font-bold">Hora Salida</th>
+                        <th class="p-4 font-bold text-center">Estado</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-gray-700">
+                    @if (Model == null || Model.Rows.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="p-8 text-center text-gray-400">
+                                No se encontraron registros de asistencia en el rango de fechas seleccionado.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (System.Data.DataRow row in Model.Rows)
+                        {
+                            bool isCheckedOut = row["status"] != DBNull.Value && row["status"].ToString() == "CHECKED_OUT";
+                            string checkInTime = row["check_in_time"] != DBNull.Value ? Convert.ToDateTime(row["check_in_time"]).ToString("dd/MM/yyyy hh:mm tt") : "-";
+                            string checkOutTime = row["check_out_time"] != DBNull.Value ? Convert.ToDateTime(row["check_out_time"]).ToString("dd/MM/yyyy hh:mm tt") : "En Aula";
+                            string childName = $"{row["first_name"]} {row["last_name"]}";
+                            string checkedInBy = row["checked_in_by"]?.ToString() ?? "-";
+                            string checkedOutBy = row["checked_out_by"]?.ToString() ?? "-";
+                            string pinUsed = row["security_code_used"]?.ToString() ?? "-";
+
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="p-4 font-bold text-[#1B365D]">@checkInTime</td>
+                                <td class="p-4 font-bold">@childName</td>
+                                <td class="p-4">
+                                    <p><strong>Entrada:</strong> @checkedInBy</p>
+                                    <p class="text-gray-500"><strong>Salida:</strong> @checkedOutBy</p>
+                                </td>
+                                <td class="p-4 font-mono text-[#00A8CC] font-bold">@pinUsed</td>
+                                <td class="p-4">@checkOutTime</td>
+                                <td class="p-4 text-center">
+                                    <span class="px-3 py-1 font-bold text-[10px] rounded-full uppercase tracking-wider @(isCheckedOut ? "bg-gray-100 text-gray-600" : "bg-emerald-50 text-emerald-600")">
+                                        @(isCheckedOut ? "Completado" : "En Aula")
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
