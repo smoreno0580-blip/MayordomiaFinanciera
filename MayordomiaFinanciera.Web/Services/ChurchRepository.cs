@@ -386,7 +386,7 @@ namespace MayordomiaFinanciera.Web.Services
                 {
                     string insertUserSql = @"
                 INSERT INTO users (name, email, password_hash, role, church_id, church_role)
-                VALUES (@Name, @Email, @PasswordHash, 'Teacher',@ChurchId, 'PASTOR');";
+                VALUES (@Name, @Email, @PasswordHash, 'Pastor',@ChurchId, 'PASTOR');";
 
                     await connection.ExecuteAsync(insertUserSql, new
                     {
