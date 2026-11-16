@@ -1,5 +1,9 @@
 ﻿@{
     Layout = null; // No utiliza el layout del aplicativo interno para mantener un diseño independiente
+    ViewData["Title"] = "Mayordomía y Finanzas | Plataforma para la Gestión y Finanzas Bíblicas para Iglesias";
+    ViewData["MetaDescription"] = "Plataforma integral para la enseñanza del manejo de las finanzas, gestion y seguimiento de eventos y avisos, grupos pequeños, escuela dominical y agenda ministerial de tu iglesia o ministerio con principios bíblicos.";
+    ViewData["OgImage"] = $"{Context.Request.Scheme}://{Context.Request.Host}/images/og-preview.jpg";
+    var currentUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}";
 }
 
 <!DOCTYPE html>
@@ -7,10 +11,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mayordomía y Finanzas - Finanzas Bíblicas</title>
+
+    <!-- SEO y Metadatos Profesionales -->
+    <title>@ViewData["Title"]</title>
+    <meta name="description" content="@ViewData["MetaDescription"]">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="@currentUrl">
+
+    <!-- OpenGraph (WhatsApp, Facebook, LinkedIn) -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Mayordomía y Finanzas">
+    <meta property="og:title" content="@ViewData["Title"]">
+    <meta property="og:description" content="@ViewData["MetaDescription"]">
+    <meta property="og:url" content="@currentUrl">
+    <meta property="og:image" content="@ViewData["OgImage"]">
+
+    <!-- Twitter / X Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@ViewData["Title"]">
+    <meta name="twitter:description" content="@ViewData["MetaDescription"]">
+    <meta name="twitter:image" content="@ViewData["OgImage"]">
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 576 512%22><path fill=%22%2300A8CC%22 d=%22M280.3 3.8C283 1.4 286.5 0 290.2 0s7.2 1.4 9.9 3.8l256 224c5.7 5 6.5 13.5 1.5 19.2s-13.5 6.5-19.2 1.5L290.2 32.7 37.9 248.5c-5.7 5-14.2 4.3-19.2-1.5s-4.3-14.2 1.5-19.2l256-224zM544 237.6V480c0 17.7-14.3 32-32-32H416c-17.7 0-32 14.3-32 32V384c0-17.7-14.3-32-32-32H224c-17.7 0-32 14.3-32 32v96c0 17.7-14.3 32-32 32H64c-17.7 0-32-14.3-32-32V237.6c0-4.5 2-8.8 5.5-11.7l12-10c5.9-4.9 14.5-4.1 19.4 1.8s4.1 14.5-1.8 19.4l-7.7 6.4V464h32V384c0-35.3 28.7-64 64-64h96c35.3 0 64 28.7 64 64v80h32V253.5l-7.7-6.4c-5.9-4.9-6.7-13.5-1.8-19.4s13.5-6.7 19.4-1.8l12 10c3.5 2.9 5.5 7.2 5.5 11.7z%22/></svg>">
     <!-- Alpine.js para interactividad responsive -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -108,19 +133,19 @@
                 <span class="bg-[#00A8CC]/20 text-[#00A8CC] border border-[#00A8CC]/40 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider inline-block">
                     Ministerio Cristocéntrico & Plataforma SaaS
                 </span>
-                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight">
+                <h1 class="text-4xl sm:text-4xl lg:text-4xl font-extrabold leading-tight">
                     Transforma tus Finanzas con Principios Bíblicos
                 </h1>
                 <p class="text-gray-300 text-base sm:text-lg max-w-xl mx-auto lg:mx-0">
-                    Capacitamos e inspiramos a personas, familias e iglesias a administrar el dinero y los recursos materiales bajo el diseño y propósito divino.
+                    Capacitamos e inspiramos a personas, familias e iglesias a administrar el dinero y los recursos materiales bajo los conceptos Bíblicos, promoviendo una cultura de mayordomía, generosidad, integridad y libertad financiera fundamentada en los principios de la Palabra de Dios.
+
+                    Buscamos transformar la manera en que las personas piensan, toman decisiones y se relacionan con el dinero, ayudándolas a desarrollar hábitos financieros saludables, salir del endeudamiento, vivir con propósito, fortalecer sus familias y descubrir que sus recursos son herramientas para bendecir a otros y extender el Reino de Dios.
+
+                    Fomando generaciones de buenos administradores, capaces de vivir en contentamiento, dar con generosidad, trabajar con excelencia y utilizar sus talentos, dones y recursos para impactar positivamente sus comunidades y glorificar a Dios.
                 </p>
                 <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
                     <a href="@Url.Action("Login", "Account")" class="w-full sm:w-auto px-8 py-3.5 rounded-xl text-sm font-bold bg-[#00A8CC] text-white hover:bg-white hover:text-[#1B365D] transition-all shadow-xl text-center">
                         Ingresar a la Plataforma <i class="fa-solid fa-arrow-right ml-2"></i>
-                    </a>
-                    <a href="#planes-iglesias" class="w-full sm:w-auto px-8 py-3.5 rounded-xl text-sm font-bold border border-white/30 hover:bg-white/10 transition-all text-center flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-church"></i>
-                        <span>Ver Planes para Iglesias</span>
                     </a>
                 </div>
             </div>
