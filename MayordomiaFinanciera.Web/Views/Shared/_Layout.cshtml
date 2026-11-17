@@ -1,4 +1,9 @@
-﻿<!DOCTYPE html>
+﻿@{
+    var systemRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value?.ToUpper() ?? "";
+    var churchRole = User.FindFirst("ChurchRole")?.Value?.ToUpper() ?? "";
+    bool isPastorOrAdmin = systemRole == "ADMIN" || churchRole == "Lider" || churchRole == "LIDER" || churchRole == "CoPastor" || churchRole == "COPASTOR" || churchRole == "Pastor" || churchRole == "PASTOR" || churchRole == "ADMIN";
+}
+<!DOCTYPE html>
 <html lang="es" class="h-full">
 <head>
     <meta charset="UTF-8">
@@ -157,7 +162,7 @@
                     }
 
                     <!-- SUBMENÚ DESPLEGABLE: GESTIÓN MINISTERIAL -->
-                    @if (isLeaderOrAbove)
+                    @if (isPastorOrAdmin)
                     {
                         <div class="py-0.5">
                             <button @@click="ministryOpen = !ministryOpen" class="w-full flex items-center justify-between px-2 py-1 rounded-md font-medium hover:bg-white/10 transition text-left text-cyan-300">
@@ -174,7 +179,7 @@
                                     <span>Perfil de la Iglesia</span>
                                 </a>
 
-                                @if (User.IsInRole("teacher") || User.IsInRole("TEACHER") || User.IsInRole("pastor") || User.IsInRole("PASTOR") || User.IsInRole("admin") || User.IsInRole("ADMIN"))
+                                @if (churchRole == "CoPastor" || churchRole == "COPASTOR" || churchRole == "Pastor" || churchRole == "PASTOR" || User.IsInRole("admin") || User.IsInRole("ADMIN"))
                                 {
                                     <a asp-controller="Church" asp-action="EditProfile" class="flex items-center space-x-2 px-2 py-1 rounded-md text-[11px] font-medium text-amber-300 hover:bg-white/10 transition">
                                         <i class="fa-solid fa-pen-to-square w-3.5 text-center text-amber-400 shrink-0"></i>
@@ -184,16 +189,20 @@
                                         <i class="fa-solid fa-envelope-circle-check text-sm"></i>
                                         <span>Configuración de Correo</span>
                                     </a>
-                                }
-
-                                <a href="@Url.Action("Index", "ChurchAdmin")" class="flex items-center space-x-2 px-2 py-1 rounded-md text-[11px] font-medium text-gray-200 hover:bg-white/10 hover:text-white transition">
-                                    <i class="fa-solid fa-square-poll-vertical w-3.5 text-center text-cyan-300 shrink-0"></i>
-                                    <span>Panel Eclesial</span>
-                                </a>
-                                <a href="@Url.Action("Index", "ChurchUsers")" class="flex items-center space-x-2 px-2 py-1 rounded-md text-[11px] font-medium text-gray-200 hover:bg-white/10 hover:text-white transition">
-                                    <i class="fa-solid fa-users-gear w-3.5 text-center text-amber-300 shrink-0"></i>
-                                    <span>Equipo y Miembros</span>
-                                </a>
+                                    <a href="@Url.Action("Index", "ChurchAdmin")" class="flex items-center space-x-2 px-2 py-1 rounded-md text-[11px] font-medium text-gray-200 hover:bg-white/10 hover:text-white transition">
+                                        <i class="fa-solid fa-square-poll-vertical w-3.5 text-center text-cyan-300 shrink-0"></i>
+                                        <span>Panel Eclesial</span>
+                                    </a>
+                                    <a href="@Url.Action("Index", "ChurchUsers")" class="flex items-center space-x-2 px-2 py-1 rounded-md text-[11px] font-medium text-gray-200 hover:bg-white/10 hover:text-white transition">
+                                        <i class="fa-solid fa-users-gear w-3.5 text-center text-amber-300 shrink-0"></i>
+                                        <span>Equipo y Miembros</span>
+                                    </a>
+                                    <a href="@Url.Action("Index", "Bulletins")" class="flex items-center space-x-2 px-2 py-1 rounded-md text-[11px] font-medium text-gray-200 hover:bg-white/10 hover:text-white transition">
+                                        <i class="fa-solid fa-bullhorn w-3.5 text-center text-emerald-400 shrink-0"></i>
+                                        <span>Boletines y Avisos</span>
+                                    </a>
+                                }                                                              
+                                
                                 <a href="@Url.Action("Index", "SmallGroups")" class="flex items-center space-x-2 px-2 py-1 rounded-md text-[11px] font-medium text-gray-200 hover:bg-white/10 hover:text-white transition">
                                     <i class="fa-solid fa-users-line w-3.5 text-center text-[#00A8CC] shrink-0"></i>
                                     <span>Grupos Pequeños</span>
@@ -202,10 +211,7 @@
                                     <i class="fa-solid fa-person-walking-arrow-right w-3.5 text-center text-amber-400 shrink-0"></i>
                                     <span>Ruta del Visitante</span>
                                 </a>
-                                <a href="@Url.Action("Index", "Bulletins")" class="flex items-center space-x-2 px-2 py-1 rounded-md text-[11px] font-medium text-gray-200 hover:bg-white/10 hover:text-white transition">
-                                    <i class="fa-solid fa-bullhorn w-3.5 text-center text-emerald-400 shrink-0"></i>
-                                    <span>Boletines y Avisos</span>
-                                </a>
+                                
                                 <a href="@Url.Action("Index", "Volunteers")" class="flex items-center space-x-2 px-2 py-1 rounded-md text-[11px] font-medium text-gray-200 hover:bg-white/10 hover:text-white transition">
                                     <i class="fa-solid fa-people-group w-3.5 text-center text-sky-400 shrink-0"></i>
                                     <span>Equipos de Servicio</span>
@@ -215,7 +221,7 @@
                                 <a href="@Url.Action("Index", "Calendar")" class="flex items-center space-x-2 px-2 py-1 rounded-md text-[11px] font-medium text-gray-200 hover:bg-white/10 hover:text-white transition">
                                         <i class="fa-solid fa-calendar-days text-sm"></i>
                                         <span>Mantenimiento Calendario</span>
-                                    </a>
+                                </a>
                                 <!-- 🔑 Enlace al Módulo de Escuela Dominical y Check-In -->
                                 <a href="@Url.Action("Index", "SundaySchool")" class="flex items-center space-x-2 px-2 py-1 rounded-md text-[11px] font-medium text-gray-200 hover:bg-white/10 hover:text-white transition">
                                     <i class="fa-solid fa-children w-4 text-center"></i>

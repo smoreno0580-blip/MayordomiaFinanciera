@@ -25,7 +25,7 @@
     }
 
     <!-- Si es Administrador, Pastor o Profesor, mostrar acceso directo inteligente para gestionar métodos -->
-    @if (User.IsInRole("admin") || User.IsInRole("ADMIN") || User.IsInRole("PASTOR") || User.IsInRole("pastor") || User.IsInRole("teacher") || User.IsInRole("TEACHER"))
+    @if (User.IsInRole("admin") || User.IsInRole("ADMIN") || User.IsInRole("PASTOR") || User.IsInRole("pastor"))
     {
         // Detectar si el usuario tiene una iglesia asociada en sus claims
         var churchClaim = User.FindFirst("ChurchId")?.Value ?? User.FindFirst("church_id")?.Value;
